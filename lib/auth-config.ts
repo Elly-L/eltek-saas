@@ -1,0 +1,41 @@
+// Zitadel OIDC Configuration
+export const ZITADEL_CONFIG = {
+  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-5mztig.eu1.zitadel.cloud',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366379023921594776',
+  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366375710673140139',
+  redirectUri: process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+  postLogoutUri: process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || 'http://localhost:3000',
+  jwksUri: 'https://logan-5mztig.eu1.zitadel.cloud/oauth/v2/keys',
+}
+
+// Organization (Tenant) Configuration
+export const ORGANIZATIONS = {
+  eltek: {
+    id: '366374814316839320',
+    name: 'Eltek',
+    description: 'Default Organization',
+  },
+  acme: {
+    id: '366384747368169880',
+    name: 'Acme Corp',
+    description: 'Admin Role Organization',
+  },
+  global: {
+    id: '366384790519216555',
+    name: 'Global Tech',
+    description: 'Member Role Organization',
+  },
+} as const
+
+export type OrgKey = keyof typeof ORGANIZATIONS
+
+// Role definitions
+export const ROLES = {
+  ADMIN: 'admin',
+  MEMBER: 'member',
+} as const
+
+export type Role = (typeof ROLES)[keyof typeof ROLES]
+
+// OIDC Scopes
+export const OIDC_SCOPES = 'openid profile email urn:zitadel:iam:org:id urn:zitadel:iam:user:metadata'
