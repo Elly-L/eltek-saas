@@ -35,8 +35,8 @@ function createUserManager(orgId?: string): UserManager {
   return new UserManager({
     authority: ZITADEL_CONFIG.issuer,
     client_id: ZITADEL_CONFIG.clientId,
-    redirect_uri: ZITADEL_CONFIG.redirectUri,
-    post_logout_redirect_uri: ZITADEL_CONFIG.postLogoutUri,
+    redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
+    post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
     response_type: 'code',
     scope: OIDC_SCOPES,
     userStore: new WebStorageStateStore({ store: typeof window !== 'undefined' ? window.localStorage : undefined }),

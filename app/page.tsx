@@ -51,7 +51,7 @@ export default function LoginPage() {
               alt="Eltek SaaS"
               width={80}
               height={80}
-              className="rounded-2xl shadow-lg"
+              className="h-auto w-20 rounded-2xl shadow-lg"
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">

@@ -1,11 +1,20 @@
 // Zitadel OIDC Configuration
+// Dynamic URL detection for redirect URIs
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+}
+
 export const ZITADEL_CONFIG = {
   issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-5mztig.eu1.zitadel.cloud',
   clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366379023921594776',
   projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366375710673140139',
-  redirectUri: process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || 'http://localhost:3000/auth/callback',
-  postLogoutUri: process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || 'http://localhost:3000',
   jwksUri: 'https://logan-5mztig.eu1.zitadel.cloud/oauth/v2/keys',
+  // These are now functions to get dynamic URLs
+  getRedirectUri: () => `${getBaseUrl()}/auth/callback`,
+  getPostLogoutUri: () => getBaseUrl(),
 }
 
 // Organization (Tenant) Configuration
