@@ -12,6 +12,7 @@ interface AuthUser {
   roles: string[]
   accessToken: string
   rawUser: User
+  orgMemberships: string[] // List of org IDs user belongs to
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (orgId?: string) => Promise<void>
+  signup: (orgId?: string) => Promise<void>
   logout: () => Promise<void>
   switchOrganization: (orgKey: OrgKey) => Promise<void>
   getAccessToken: () => string | null
@@ -68,9 +70,31 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
                 (payload['org_id'] as string) || 
                 ORGANIZATIONS.eltek.id
 
-  // Extract roles from token claims
+  // Extract roles from token claims - check multiple claim formats
   const projectRoles = payload[`urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`] as Record<string, unknown> | undefined
   const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
+
+  // Extract organization memberships from token
+  // Zitadel includes org memberships in different claim formats
+  const orgMemberships: string[] = []
+  
+  // Add current org
+  orgMemberships.push(orgId)
+  
+  // Check for org roles claim which shows all org memberships
+  const orgRoles = payload['urn:zitadel:iam:org:roles'] as Record<string, unknown> | undefined
+  if (orgRoles) {
+    Object.keys(orgRoles).forEach(role => {
+      const roleOrgs = orgRoles[role] as Record<string, string> | undefined
+      if (roleOrgs) {
+        Object.values(roleOrgs).forEach(id => {
+          if (!orgMemberships.includes(id)) {
+            orgMemberships.push(id)
+          }
+        })
+      }
+    })
+  }
 
   return {
     id: oidcUser.profile.sub,
@@ -80,6 +104,7 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     roles,
     accessToken: oidcUser.access_token,
     rawUser: oidcUser,
+    orgMemberships,
   }
 }
 
@@ -113,12 +138,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (orgId?: string) => {
-    console.log('[v0] Login initiated with orgId:', orgId)
-    console.log('[v0] Redirect URI will be:', ZITADEL_CONFIG.getRedirectUri())
-    console.log('[v0] Client ID:', ZITADEL_CONFIG.clientId)
     const manager = createUserManager(orgId)
     setUserManager(manager)
     await manager.signinRedirect()
+  }, [])
+
+  const signup = useCallback(async (orgId?: string) => {
+    // Zitadel uses the same endpoint with prompt=create for registration
+    const manager = createUserManager(orgId)
+    setUserManager(manager)
+    await manager.signinRedirect({
+      extraQueryParams: {
+        prompt: 'create',
+        ...(orgId ? { org_id: orgId } : {}),
+      },
+    })
   }, [])
 
   const logout = useCallback(async () => {
@@ -144,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        signup,
         logout,
         switchOrganization,
         getAccessToken,

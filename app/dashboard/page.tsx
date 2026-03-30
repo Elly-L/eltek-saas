@@ -45,8 +45,7 @@ export default function DashboardPage() {
               alt="Eltek SaaS"
               width={40}
               height={40}
-              style={{ width: 'auto', height: 'auto' }}
-              className="max-w-10 max-h-10 rounded-lg"
+              className="rounded-lg"
             />
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">

@@ -5,7 +5,7 @@ import { ORGANIZATIONS, type OrgKey } from '@/lib/auth-config'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Check, Crown, Users } from 'lucide-react'
+import { Building2, Check, Crown, Users, Lock } from 'lucide-react'
 
 const ORG_CONFIG: Record<OrgKey, { icon: typeof Building2; color: string; description: string }> = {
   eltek: {
@@ -32,6 +32,16 @@ export function OrgSwitcher() {
     await switchOrganization(orgKey)
   }
 
+  // Filter organizations to only show those the user is a member of
+  const userOrgIds = user?.orgMemberships || [user?.orgId]
+  const availableOrgs = (Object.keys(ORGANIZATIONS) as OrgKey[]).filter(key => {
+    const org = ORGANIZATIONS[key]
+    return userOrgIds.includes(org.id)
+  })
+
+  // Get all orgs for display (show locked state for unavailable ones)
+  const allOrgs = Object.keys(ORGANIZATIONS) as OrgKey[]
+
   return (
     <Card>
       <CardHeader>
@@ -40,27 +50,31 @@ export function OrgSwitcher() {
           <CardTitle>Organization Switcher</CardTitle>
         </div>
         <CardDescription>
-          Switch between organizations to change your access context
+          Switch between your organizations ({availableOrgs.length} available)
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3">
-          {(Object.keys(ORGANIZATIONS) as OrgKey[]).map((key) => {
+          {allOrgs.map((key) => {
             const org = ORGANIZATIONS[key]
             const config = ORG_CONFIG[key]
             const Icon = config.icon
             const isActive = user?.orgId === org.id
+            const hasAccess = userOrgIds.includes(org.id)
 
             return (
               <Button
                 key={key}
                 variant={isActive ? 'default' : 'outline'}
+                disabled={!hasAccess}
                 className={`h-auto justify-start p-4 ${
                   isActive
                     ? `bg-gradient-to-r ${config.color} text-white hover:opacity-90`
-                    : 'hover:bg-muted'
+                    : hasAccess
+                    ? 'hover:bg-muted'
+                    : 'opacity-50 cursor-not-allowed'
                 }`}
-                onClick={() => handleSwitch(key)}
+                onClick={() => hasAccess && handleSwitch(key)}
               >
                 <div className="flex w-full items-center gap-3">
                   <div
@@ -68,7 +82,11 @@ export function OrgSwitcher() {
                       isActive ? 'bg-white/20' : 'bg-muted'
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
+                    {hasAccess ? (
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />
+                    ) : (
+                      <Lock className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                   <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
@@ -78,9 +96,14 @@ export function OrgSwitcher() {
                           Admin
                         </Badge>
                       )}
+                      {!hasAccess && (
+                        <Badge variant="secondary" className="text-xs">
+                          No Access
+                        </Badge>
+                      )}
                     </div>
                     <p className={`text-xs ${isActive ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      {config.description}
+                      {hasAccess ? config.description : 'You are not a member of this organization'}
                     </p>
                   </div>
                   {isActive && (
@@ -92,7 +115,7 @@ export function OrgSwitcher() {
           })}
         </div>
         <p className="mt-4 text-xs text-muted-foreground text-center">
-          Switching organizations will re-authenticate with the selected org_id
+          Organizations shown based on your Zitadel memberships
         </p>
       </CardContent>
     </Card>

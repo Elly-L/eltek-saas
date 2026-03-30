@@ -19,7 +19,7 @@ const ORG_LOGIN_CONFIG: Record<OrgKey, { icon: typeof Building2; gradient: strin
 
 export default function LoginPage() {
   const router = useRouter()
-  const { isLoading, isAuthenticated, login } = useAuth()
+  const { isLoading, isAuthenticated, login, signup } = useAuth()
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -51,8 +51,8 @@ export default function LoginPage() {
               alt="Eltek SaaS"
               width={80}
               height={80}
-              style={{ width: 'auto', height: 'auto' }}
-              className="max-w-20 max-h-20 rounded-2xl shadow-lg"
+              loading="eager"
+              className="rounded-2xl shadow-lg"
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">
@@ -74,14 +74,24 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Default Login */}
-            <Button
-              className="w-full h-14 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90"
-              onClick={() => handleLogin()}
-            >
-              <Lock className="mr-2 h-5 w-5" />
-              Sign in with Zitadel
-            </Button>
+            {/* Default Login & Signup */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                className="h-14 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90"
+                onClick={() => handleLogin()}
+              >
+                <Lock className="mr-2 h-5 w-5" />
+                Sign In
+              </Button>
+              <Button
+                variant="outline"
+                className="h-14 border-2"
+                onClick={() => signup()}
+              >
+                <Users className="mr-2 h-5 w-5" />
+                Sign Up
+              </Button>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

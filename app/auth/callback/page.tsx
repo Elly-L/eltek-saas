@@ -13,11 +13,6 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log('[v0] Callback page loaded')
-        console.log('[v0] Redirect URI:', ZITADEL_CONFIG.getRedirectUri())
-        console.log('[v0] Client ID:', ZITADEL_CONFIG.clientId)
-        console.log('[v0] Issuer:', ZITADEL_CONFIG.issuer)
-        
         const userManager = new UserManager({
           authority: ZITADEL_CONFIG.issuer,
           client_id: ZITADEL_CONFIG.clientId,
@@ -28,10 +23,16 @@ export default function AuthCallbackPage() {
           userStore: new WebStorageStateStore({ store: window.localStorage }),
         })
 
-        await userManager.signinRedirectCallback()
-        router.push('/dashboard')
+        const user = await userManager.signinRedirectCallback()
+        if (user) {
+          // Force a small delay to ensure localStorage is updated
+          await new Promise(resolve => setTimeout(resolve, 100))
+          window.location.href = '/dashboard'
+        } else {
+          setError('No user returned from authentication')
+        }
       } catch (err) {
-        console.error('[v0] Auth callback error:', err)
+        console.error('Auth callback error:', err)
         setError(err instanceof Error ? err.message : 'Authentication failed')
       }
     }
