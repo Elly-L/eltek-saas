@@ -13,11 +13,16 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log('[v0] Callback page loaded')
+        console.log('[v0] Redirect URI:', ZITADEL_CONFIG.getRedirectUri())
+        console.log('[v0] Client ID:', ZITADEL_CONFIG.clientId)
+        console.log('[v0] Issuer:', ZITADEL_CONFIG.issuer)
+        
         const userManager = new UserManager({
           authority: ZITADEL_CONFIG.issuer,
           client_id: ZITADEL_CONFIG.clientId,
-          redirect_uri: ZITADEL_CONFIG.redirectUri,
-          post_logout_redirect_uri: ZITADEL_CONFIG.postLogoutUri,
+          redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
+          post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
           response_type: 'code',
           scope: OIDC_SCOPES,
           userStore: new WebStorageStateStore({ store: window.localStorage }),
@@ -26,7 +31,7 @@ export default function AuthCallbackPage() {
         await userManager.signinRedirectCallback()
         router.push('/dashboard')
       } catch (err) {
-        console.error('Auth callback error:', err)
+        console.error('[v0] Auth callback error:', err)
         setError(err instanceof Error ? err.message : 'Authentication failed')
       }
     }

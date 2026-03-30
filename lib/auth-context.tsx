@@ -113,6 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (orgId?: string) => {
+    console.log('[v0] Login initiated with orgId:', orgId)
+    console.log('[v0] Redirect URI will be:', ZITADEL_CONFIG.getRedirectUri())
+    console.log('[v0] Client ID:', ZITADEL_CONFIG.clientId)
     const manager = createUserManager(orgId)
     setUserManager(manager)
     await manager.signinRedirect()
