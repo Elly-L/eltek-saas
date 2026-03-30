@@ -9,7 +9,7 @@ const getBaseUrl = () => {
 
 export const ZITADEL_CONFIG = {
   issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-5mztig.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366379023921594776',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366384093325246872',
   projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366375710673140139',
   jwksUri: 'https://logan-5mztig.eu1.zitadel.cloud/oauth/v2/keys',
   // These are now functions to get dynamic URLs
