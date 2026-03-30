@@ -46,5 +46,5 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 
-// OIDC Scopes
-export const OIDC_SCOPES = 'openid profile email urn:zitadel:iam:org:id urn:zitadel:iam:user:metadata'
+// OIDC Scopes - using basic scopes that Zitadel supports
+export const OIDC_SCOPES = 'openid profile email'
