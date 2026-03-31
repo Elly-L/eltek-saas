@@ -16,8 +16,19 @@ export const ZITADEL_CONFIG = {
     return `${issuer}/oauth/v2/keys`
   },
   // These are now functions to get dynamic URLs
-  getRedirectUri: () => (process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`).trim(),
-  getPostLogoutUri: () => (process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl()).trim(),
+  // Always use window.location.origin at runtime to support v0 preview URL changes
+  getRedirectUri: () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/auth/callback`
+    }
+    return process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`
+  },
+  getPostLogoutUri: () => {
+    if (typeof window !== 'undefined') {
+      return window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  },
 }
 
 // Organization (Tenant) Configuration

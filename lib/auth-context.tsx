@@ -28,22 +28,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 function createUserManager(orgId?: string): UserManager {
-  const extraQueryParams: Record<string, string> = {}
-  if (orgId) {
-    extraQueryParams['org_id'] = orgId
-    console.log('[v0] Creating UserManager with org_id:', orgId)
-  }
+  // NOTE: org_id should NOT be in extraQueryParams as a query parameter
+  // Zitadel expects it only in the scope claim (urn:zitadel:iam:org:id:{org_id})
+  // The orgId parameter is stored for post-login context, not for the OIDC request
 
   const redirectUri = ZITADEL_CONFIG.getRedirectUri()
   const postLogoutUri = ZITADEL_CONFIG.getPostLogoutUri()
   
-  console.log('[v0] UserManager config:', {
+  console.log('[v0] Creating UserManager:', {
     issuer: ZITADEL_CONFIG.issuer,
     client_id: ZITADEL_CONFIG.clientId,
     redirect_uri: redirectUri,
     post_logout_uri: postLogoutUri,
     scope: OIDC_SCOPES,
-    extraQueryParams,
+    requesting_org: orgId || 'default',
   })
 
   return new UserManager({
@@ -54,7 +52,6 @@ function createUserManager(orgId?: string): UserManager {
     response_type: 'code',
     scope: OIDC_SCOPES,
     userStore: new WebStorageStateStore({ store: typeof window !== 'undefined' ? window.localStorage : undefined }),
-    extraQueryParams,
   })
 }
 
