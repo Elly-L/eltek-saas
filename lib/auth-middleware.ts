@@ -1,11 +1,12 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
-import { ZITADEL_CONFIG, ORGANIZATIONS } from './auth-config'
+import { ZITADEL_CONFIG, ORGANIZATIONS } from '@/lib/auth-config'
 
 export interface TokenUser {
   id: string
   orgId: string
   roles: string[]
   email?: string
+  orgMemberships?: string[]
 }
 
 export interface AuthenticatedRequest {
@@ -97,13 +98,29 @@ function extractUserFromPayload(payload: JWTPayload): TokenUser {
   const projectRoles = payload[projectRolesKey] as Record<string, unknown> | undefined
   const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
 
-  console.log('[v0] [Middleware] Extracted - User ID:', payload.sub, 'Org:', orgId, 'Roles:', roles)
+  // Extract organization memberships
+  const orgMemberships: string[] = [orgId]
+  const orgRoles = payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>> | undefined
+  if (orgRoles) {
+    Object.values(orgRoles).forEach(roleOrgs => {
+      if (roleOrgs && typeof roleOrgs === 'object') {
+        Object.values(roleOrgs).forEach(id => {
+          if (id && !orgMemberships.includes(id)) {
+            orgMemberships.push(id)
+          }
+        })
+      }
+    })
+  }
+
+  console.log('[v0] [Middleware] Extracted - User ID:', payload.sub, 'Org:', orgId, 'Roles:', roles, 'Memberships:', orgMemberships)
 
   return {
     id: payload.sub || '',
     orgId,
     roles,
     email: payload.email as string | undefined,
+    orgMemberships,
   }
 }
 
@@ -113,6 +130,27 @@ export function hasRole(user: TokenUser, requiredRole: string): boolean {
 
 export function isAdmin(user: TokenUser): boolean {
   return hasRole(user, 'admin')
+}
+
+// Check if user can access a specific organization
+// Admins can access all orgs, members can only access their own org or orgs in their membership list
+export function canAccessOrg(user: TokenUser, orgId: string): boolean {
+  // Admins can access all organizations
+  if (isAdmin(user)) {
+    return true
+  }
+  
+  // Check if user's current org matches
+  if (user.orgId === orgId) {
+    return true
+  }
+  
+  // Check if org is in user's memberships
+  if (user.orgMemberships && user.orgMemberships.includes(orgId)) {
+    return true
+  }
+  
+  return false
 }
 
 export function extractBearerToken(authHeader: string | null): string | null {
