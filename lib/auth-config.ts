@@ -50,4 +50,5 @@ export type Role = (typeof ROLES)[keyof typeof ROLES]
 // urn:zitadel:iam:org:id:{org_id} - scopes to specific org
 // urn:zitadel:iam:org:project:id:{project_id}:aud - includes project roles
 // urn:zitadel:iam:user:metadata - includes user metadata
-export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata`
+// urn:zitadel:iam:org:roles - includes all organization memberships with their roles
+export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata urn:zitadel:iam:org:roles`
