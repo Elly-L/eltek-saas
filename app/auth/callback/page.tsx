@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
 import { ZITADEL_CONFIG, OIDC_SCOPES } from '@/lib/auth-config'
 import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
+import { AlertCircle } from 'lucide-react'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -65,26 +67,26 @@ export default function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">Authentication Error</h1>
-          <p className="mt-2 text-muted-foreground">{error}</p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-          >
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="rounded-full bg-destructive/10 p-4 w-fit mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2">Authentication Error</h1>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => window.location.href = '/'}>
             Return to Home
-          </button>
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
-        <Spinner className="mx-auto h-8 w-8" />
-        <p className="mt-4 text-muted-foreground">Completing authentication...</p>
+        <Spinner className="h-8 w-8 mx-auto mb-4" />
+        <p className="text-muted-foreground">Completing authentication...</p>
       </div>
     </div>
   )

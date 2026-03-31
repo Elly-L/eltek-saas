@@ -32,8 +32,26 @@ export function OrgSwitcher() {
     await switchOrganization(orgKey)
   }
 
-  // Filter organizations to only show those the user is a member of
-  const userOrgIds = user?.orgMemberships || [user?.orgId]
+  // Determine which orgs user has access to based on roles and memberships
+  // Admins have access to all orgs, members only to their assigned orgs
+  const isUserAdmin = user?.roles.includes('admin') || false
+
+  // Build the list of accessible org IDs
+  let userOrgIds: string[] = []
+  if (isUserAdmin) {
+    // Admins can access all organizations
+    userOrgIds = Object.values(ORGANIZATIONS).map(org => org.id)
+    console.log('[v0] User is admin, showing all orgs:', userOrgIds)
+  } else if (user?.orgMemberships && user.orgMemberships.length > 0) {
+    // Members see orgs they are a member of
+    userOrgIds = user.orgMemberships
+    console.log('[v0] User memberships:', userOrgIds)
+  } else if (user?.orgId) {
+    // Fallback to current org
+    userOrgIds = [user.orgId]
+    console.log('[v0] No memberships found, using current org:', user.orgId)
+  }
+
   const availableOrgs = (Object.keys(ORGANIZATIONS) as OrgKey[]).filter(key => {
     const org = ORGANIZATIONS[key]
     return userOrgIds.includes(org.id)
@@ -67,20 +85,18 @@ export function OrgSwitcher() {
                 key={key}
                 variant={isActive ? 'default' : 'outline'}
                 disabled={!hasAccess}
-                className={`h-auto justify-start p-4 ${
-                  isActive
+                className={`h-auto justify-start p-4 ${isActive
                     ? `bg-gradient-to-r ${config.color} text-white hover:opacity-90`
                     : hasAccess
-                    ? 'hover:bg-muted'
-                    : 'opacity-50 cursor-not-allowed'
-                }`}
+                      ? 'hover:bg-muted'
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
                 onClick={() => hasAccess && handleSwitch(key)}
               >
                 <div className="flex w-full items-center gap-3">
                   <div
-                    className={`rounded-lg p-2 ${
-                      isActive ? 'bg-white/20' : 'bg-muted'
-                    }`}
+                    className={`rounded-lg p-2 ${isActive ? 'bg-white/20' : 'bg-muted'
+                      }`}
                   >
                     {hasAccess ? (
                       <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-muted-foreground'}`} />

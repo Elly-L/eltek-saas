@@ -7,7 +7,6 @@ import { ORGANIZATIONS } from '@/lib/auth-config'
 import { UserInfoCard } from '@/components/user-info-card'
 import { OrgSwitcher } from '@/components/org-switcher'
 import { DataPanel } from '@/components/data-panel'
-import { AdminPanel } from '@/components/admin-panel'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { LogOut } from 'lucide-react'
@@ -30,6 +29,19 @@ export default function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, router])
 
+  useEffect(() => {
+    // Log user org and role information
+    if (user) {
+      console.log('[v0] [Dashboard] User authenticated:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        orgId: user.orgId,
+        roles: user.roles,
+      })
+    }
+  }, [user])
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -48,13 +60,15 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <Image
-              src="/eltek-logo.jpg"
-              alt={orgName}
-              width={40}
-              height={40}
-              className="rounded-lg w-auto h-auto"
-            />
+            <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-md">
+              <Image
+                src="/eltek-logo.jpg"
+                alt={orgName}
+                width={32}
+                height={32}
+                className="h-full w-full object-contain"
+              />
+            </div>
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">
                 {orgName}
@@ -93,7 +107,6 @@ export default function DashboardPage() {
           {/* Right Column - Data Panels */}
           <div className="space-y-6 lg:col-span-2">
             <DataPanel />
-            <AdminPanel />
           </div>
         </div>
       </main>
