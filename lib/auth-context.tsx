@@ -12,6 +12,7 @@ interface AuthUser {
   roles: string[]
   accessToken: string
   rawUser: User
+  orgMemberships: string[] // List of org IDs user belongs to
 }
 
 interface AuthContextType {
@@ -64,74 +65,50 @@ function parseJwtPayload(token: string): Record<string, unknown> {
 function extractUserFromOidc(oidcUser: User): AuthUser {
   const payload = parseJwtPayload(oidcUser.access_token)
   const idTokenPayload = oidcUser.id_token ? parseJwtPayload(oidcUser.id_token) : {}
-
-  console.log('[v0] Extracting user from OIDC token')
-  console.log('[v0] Access token payload keys:', Object.keys(payload))
-  console.log('[v0] ID token payload keys:', Object.keys(idTokenPayload))
-
-  // Extract org_id with fallback chain
-  // Priority: explicit org:id claim > user's resource owner > request context > default
-  let orgId = ''
-
-  // Try explicit org ID claim first
-  if (payload['urn:zitadel:iam:org:id']) {
-    orgId = payload['urn:zitadel:iam:org:id'] as string
-    console.log('[v0] Found org:id in access token:', orgId)
-  } else if (idTokenPayload['urn:zitadel:iam:org:id']) {
-    orgId = idTokenPayload['urn:zitadel:iam:org:id'] as string
-    console.log('[v0] Found org:id in ID token:', orgId)
-  } else if (oidcUser.profile['urn:zitadel:iam:org:id']) {
-    orgId = oidcUser.profile['urn:zitadel:iam:org:id'] as string
-    console.log('[v0] Found org:id in profile:', orgId)
-  } else if (payload['org_id']) {
-    orgId = payload['org_id'] as string
-    console.log('[v0] Found org_id in access token:', orgId)
-  } else {
-    orgId = ORGANIZATIONS.eltek.id
-    console.log('[v0] Defaulting to Eltek org ID:', orgId)
-  }
+  
+  // Extract org_id - check access token, id token, and profile
+  const orgId = (payload['urn:zitadel:iam:org:id'] as string) || 
+                (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
+                (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
+                (payload['org_id'] as string) ||
+                ORGANIZATIONS.eltek.id
 
   // Extract user info from profile first, then tokens
-  const email = oidcUser.profile.email ||
-    (idTokenPayload['email'] as string) ||
-    (payload['email'] as string) ||
-    ''
+  const email = oidcUser.profile.email || 
+                (idTokenPayload['email'] as string) || 
+                (payload['email'] as string) || 
+                ''
+  
+  const name = oidcUser.profile.name || 
+               oidcUser.profile.preferred_username ||
+               (idTokenPayload['name'] as string) ||
+               (idTokenPayload['preferred_username'] as string) ||
+               (payload['name'] as string) ||
+               ''
 
-  const name = oidcUser.profile.name ||
-    oidcUser.profile.preferred_username ||
-    (idTokenPayload['name'] as string) ||
-    (idTokenPayload['preferred_username'] as string) ||
-    (payload['name'] as string) ||
-    ''
-
-  // Extract project-specific roles from token claims
-  // The claim structure is: urn:zitadel:iam:org:project:{projectId}:roles
+  // Extract roles from token claims - check multiple claim formats
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  let roles: string[] = []
+  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) || 
+                       (idTokenPayload[projectRolesKey] as Record<string, unknown>)
+  const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
 
-  // Check access token first
-  const projectRolesAccessToken = payload[projectRolesKey] as Record<string, unknown> | undefined
-  if (projectRolesAccessToken && typeof projectRolesAccessToken === 'object') {
-    roles = Object.keys(projectRolesAccessToken)
-    console.log('[v0] Found project roles in access token:', roles)
+  // Extract organization memberships from token
+  const orgMemberships: string[] = [orgId]
+  
+  // Check for org roles claim which shows all org memberships
+  const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>) ||
+                   (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>)
+  if (orgRoles) {
+    Object.values(orgRoles).forEach(roleOrgs => {
+      if (roleOrgs && typeof roleOrgs === 'object') {
+        Object.values(roleOrgs).forEach(id => {
+          if (id && !orgMemberships.includes(id)) {
+            orgMemberships.push(id)
+          }
+        })
+      }
+    })
   }
-
-  // Fallback to ID token if not in access token
-  if (roles.length === 0) {
-    const projectRolesIdToken = idTokenPayload[projectRolesKey] as Record<string, unknown> | undefined
-    if (projectRolesIdToken && typeof projectRolesIdToken === 'object') {
-      roles = Object.keys(projectRolesIdToken)
-      console.log('[v0] Found project roles in ID token:', roles)
-    }
-  }
-
-  // Default to member role if no roles found
-  if (roles.length === 0) {
-    roles = ['member']
-    console.log('[v0] No project roles found, defaulting to member role')
-  }
-
-  console.log('[v0] Extracted user:', { id: oidcUser.profile.sub, email, orgId, roles })
 
   return {
     id: oidcUser.profile.sub,
@@ -141,6 +118,7 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     roles,
     accessToken: oidcUser.access_token,
     rawUser: oidcUser,
+    orgMemberships,
   }
 }
 
@@ -156,8 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     manager.getUser().then((oidcUser) => {
       if (oidcUser && !oidcUser.expired) {
-        const authUser = extractUserFromOidc(oidcUser)
-        setUser(authUser)
+        setUser(extractUserFromOidc(oidcUser))
       }
       setIsLoading(false)
     }).catch(() => {
@@ -170,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
-      manager.events.removeAccessTokenExpired(() => { })
+      manager.events.removeAccessTokenExpired(() => {})
     }
   }, [])
 
@@ -200,25 +177,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [userManager])
 
   const switchOrganization = useCallback(async (orgKey: OrgKey) => {
-    if (!user || !userManager) return
-
     const org = ORGANIZATIONS[orgKey]
-    console.log('[v0] Switching to organization:', org.name, 'ID:', org.id)
-
-    // Update the user object with new org context
-    const updatedUser: AuthUser = {
-      ...user,
-      orgId: org.id,
-    }
-    setUser(updatedUser)
-
-    // Store the org preference in localStorage for persistence
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedOrgId', org.id)
-    }
-
-    console.log('[v0] Organization switched to:', org.id)
-  }, [user, userManager])
+    await login(org.id)
+  }, [login])
 
   const getAccessToken = useCallback(() => {
     return user?.accessToken || null

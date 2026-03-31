@@ -9,63 +9,38 @@ export class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken()
-
+    
     if (!token) {
-      console.error('[v0] No access token available for API request')
       throw new Error('No access token available')
     }
 
-    console.log('[v0] Making API request to:', endpoint)
+    const response = await fetch(endpoint, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+      },
+    })
 
-    try {
-      const response = await fetch(endpoint, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...options.headers,
-        },
-      })
-
-      console.log('[v0] API response status:', response.status, 'for endpoint:', endpoint)
-
-      if (!response.ok) {
-        let errorDetails = ''
-        try {
-          const errorBody = await response.text()
-          errorDetails = errorBody ? ` - ${errorBody.substring(0, 200)}` : ''
-        } catch {
-          // Ignore error reading body
-        }
-
-        if (response.status === 401) {
-          console.error('[v0] Unauthorized response from API')
-          throw new Error('Unauthorized - Please log in again')
-        }
-        if (response.status === 403) {
-          console.error('[v0] Forbidden response from API')
-          throw new Error('Forbidden - Insufficient permissions')
-        }
-        console.error('[v0] API Error:', response.status, errorDetails)
-        throw new Error(`API Error: ${response.status}${errorDetails}`)
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Unauthorized - Please log in again')
       }
-
-      const result = await response.json() as T
-      console.log('[v0] API request successful for:', endpoint)
-      return result
-    } catch (error) {
-      console.error('[v0] API request failed for:', endpoint, 'Error:', error instanceof Error ? error.message : String(error))
-      throw error
+      if (response.status === 403) {
+        throw new Error('Forbidden - Insufficient permissions')
+      }
+      throw new Error(`API Error: ${response.status}`)
     }
+
+    return response.json()
   }
 
-  async getData(orgId?: string): Promise<{ data: unknown[]; orgId: string; message: string }> {
-    const url = orgId ? `/api/data?orgId=${encodeURIComponent(orgId)}` : '/api/data'
-    return this.request(url)
+  async getData(): Promise<{ data: unknown[]; orgId: string; message: string }> {
+    return this.request('/api/data')
   }
 
-  async getAdminData(orgId?: string): Promise<{ data: unknown[]; orgId: string; message: string }> {
-    const url = orgId ? `/api/admin?orgId=${encodeURIComponent(orgId)}` : '/api/admin'
-    return this.request(url)
+  async getAdminData(): Promise<{ data: unknown[]; orgId: string; message: string }> {
+    return this.request('/api/admin')
   }
 }

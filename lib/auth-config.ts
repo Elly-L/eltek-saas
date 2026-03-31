@@ -8,29 +8,29 @@ const getBaseUrl = () => {
 }
 
 export const ZITADEL_CONFIG = {
-  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
-  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
-  jwksUri: 'https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys',
+  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-5mztig.eu1.zitadel.cloud',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366384093325246872',
+  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366375710673140139',
+  jwksUri: 'https://logan-5mztig.eu1.zitadel.cloud/oauth/v2/keys',
   // These are now functions to get dynamic URLs
-  getRedirectUri: () => process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`,
-  getPostLogoutUri: () => process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl(),
+  getRedirectUri: () => `${getBaseUrl()}/auth/callback`,
+  getPostLogoutUri: () => getBaseUrl(),
 }
 
 // Organization (Tenant) Configuration
 export const ORGANIZATIONS = {
   eltek: {
-    id: process.env.NEXT_PUBLIC_ORG_ELTEK || '366479630091241134',
+    id: '366374814316839320',
     name: 'Eltek',
     description: 'Default Organization',
   },
   acme: {
-    id: process.env.NEXT_PUBLIC_ORG_ACME || '366479832122410670',
+    id: '366384747368169880',
     name: 'Acme Corp',
     description: 'Admin Role Organization',
   },
   global: {
-    id: process.env.NEXT_PUBLIC_ORG_GLOBAL || '366479851063887534',
+    id: '366384790519216555',
     name: 'Global Tech',
     description: 'Member Role Organization',
   },
