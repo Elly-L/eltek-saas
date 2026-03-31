@@ -38,7 +38,7 @@ The project supports two distinct authentication flows depending on user needs a
 
 The Approach: A frictionless, single-entry-point login screen.
 
-How it Works: The user clicks the primary "Sign in " button. The application redirects them to Zitadel without a specific organization context. Upon successful authentication, the app unpacks their JWT token, reads their urn:zitadel:iam:org:id and membership claims, and automatically routes them to their default organization's dashboard.
+How it Works: Users receive an email invitation from Zitadel. After clicking the link to set up their account and authenticate, they are redirected back to the project's sign-in page. Recognizing their new active session, the app instantly unpacks their JWT claims (like urn:zitadel:iam:org:id) and routes them directly to their default organization's dashboard.
 
 2. Context-Aware Login Mode (Organization Picker)
 **
