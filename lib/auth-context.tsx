@@ -122,24 +122,22 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
   }
 
   // Method 3: Check for project-specific roles which may indicate org access
+  // Using already-defined projectRoles variable from line 91
   if (projectRoles) {
-    console.log('[v0] User has project roles, checking for multiple org assignments')
+    console.log('[v0] User has project roles, checking for org access')
     // If user has project roles, they should have access to at least the current org
     if (!orgMemberships.includes(orgId)) {
       orgMemberships.push(orgId)
     }
   }
 
-  // Method 4: Ensure current org is always in the list
-  if (orgMemberships.length === 0 || !orgMemberships.includes(orgId)) {
-    if (!orgMemberships.includes(orgId)) {
-      orgMemberships.push(orgId)
-    }
+  // Ensure current org is always in the list
+  if (!orgMemberships.includes(orgId)) {
+    orgMemberships.push(orgId)
   }
 
   console.log('[v0] Final org memberships extracted:', orgMemberships)
 
-  // Return extracted user object with all org memberships
   return {
     id: oidcUser.profile.sub,
     email,
@@ -164,7 +162,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     manager.getUser().then((oidcUser) => {
       if (oidcUser && !oidcUser.expired) {
-        setUser(extractUserFromOidc(oidcUser))
+        let authUser = extractUserFromOidc(oidcUser)
+
+        // Restore org preference if available
+        const selectedOrgId = typeof window !== 'undefined' ? localStorage.getItem('selectedOrgId') : null
+        if (selectedOrgId && authUser.orgMemberships.includes(selectedOrgId)) {
+          console.log('[v0] Restoring selected organization:', selectedOrgId)
+          authUser = {
+            ...authUser,
+            orgId: selectedOrgId,
+          }
+        }
+
+        setUser(authUser)
       }
       setIsLoading(false)
     }).catch(() => {
@@ -207,9 +217,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [userManager])
 
   const switchOrganization = useCallback(async (orgKey: OrgKey) => {
+    if (!user || !userManager) return
+
     const org = ORGANIZATIONS[orgKey]
-    await login(org.id)
-  }, [login])
+    console.log('[v0] Switching to organization:', org.name, 'ID:', org.id)
+
+    // Update the user object with new org context
+    const updatedUser: AuthUser = {
+      ...user,
+      orgId: org.id,
+    }
+    setUser(updatedUser)
+
+    // Store the org preference in localStorage for persistence
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedOrgId', org.id)
+    }
+
+    console.log('[v0] Organization switched to:', org.id)
+  }, [user, userManager])
 
   const getAccessToken = useCallback(() => {
     return user?.accessToken || null

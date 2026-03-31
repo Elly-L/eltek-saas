@@ -59,11 +59,13 @@ export class ApiClient {
     }
   }
 
-  async getData(): Promise<{ data: unknown[]; orgId: string; message: string }> {
-    return this.request('/api/data')
+  async getData(orgId?: string): Promise<{ data: unknown[]; orgId: string; message: string }> {
+    const url = orgId ? `/api/data?orgId=${encodeURIComponent(orgId)}` : '/api/data'
+    return this.request(url)
   }
 
-  async getAdminData(): Promise<{ data: unknown[]; orgId: string; message: string }> {
-    return this.request('/api/admin')
+  async getAdminData(orgId?: string): Promise<{ data: unknown[]; orgId: string; message: string }> {
+    const url = orgId ? `/api/admin?orgId=${encodeURIComponent(orgId)}` : '/api/admin'
+    return this.request(url)
   }
 }

@@ -30,13 +30,30 @@ export async function GET(request: NextRequest) {
 
     console.log('[v0] User verified successfully:', { userId: user.id, orgId: user.orgId, roles: user.roles })
 
-    // Get data scoped to user's organization
-    const orgData = getDataByOrg(user.orgId)
-    console.log('[v0] Retrieved org data:', { orgId: user.orgId, recordCount: orgData.length })
+    // Check for orgId override from query params
+    const searchParams = request.nextUrl.searchParams
+    const requestedOrgId = searchParams.get('orgId') || user.orgId
+
+    // Verify user has access to requested org
+    if (requestedOrgId !== user.orgId) {
+      console.log('[v0] Org ID mismatch - user org:', user.orgId, 'requested:', requestedOrgId)
+      // In a real app, check if user is member of requested org
+      // For now, allow it if user is admin
+      if (!user.roles.includes('admin')) {
+        return NextResponse.json(
+          { error: 'Unauthorized to access this organization' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Get data scoped to the organization
+    const orgData = getDataByOrg(requestedOrgId)
+    console.log('[v0] Retrieved org data:', { orgId: requestedOrgId, recordCount: orgData.length })
 
     return NextResponse.json({
       message: 'Data retrieved successfully',
-      orgId: user.orgId,
+      orgId: requestedOrgId,
       userId: user.id,
       roles: user.roles,
       data: orgData,

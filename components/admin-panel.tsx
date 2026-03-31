@@ -32,15 +32,17 @@ export function AdminPanel() {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return
-      
+
       setLoading(true)
       setError(null)
-      
+
       try {
         const client = new ApiClient(getAccessToken)
-        const response: AdminResponse = await client.getAdminData()
+        console.log('[v0] Fetching admin data for org:', user.orgId)
+        const response: AdminResponse = await client.getAdminData(user.orgId)
         setData(response.data)
       } catch (err) {
+        console.error('[v0] Error fetching admin data:', err)
         setError(err instanceof Error ? err.message : 'Failed to fetch admin data')
       } finally {
         setLoading(false)
@@ -48,7 +50,7 @@ export function AdminPanel() {
     }
 
     fetchData()
-  }, [getAccessToken, user])
+  }, [getAccessToken, user?.orgId, user])
 
   if (!isAdmin) {
     return (
@@ -95,20 +97,20 @@ export function AdminPanel() {
             <Spinner className="h-6 w-6" />
           </div>
         )}
-        
+
         {error && (
           <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-4 text-destructive">
             <AlertCircle className="h-5 w-5" />
             <span>{error}</span>
           </div>
         )}
-        
+
         {!loading && !error && data.length === 0 && (
           <p className="text-center text-muted-foreground py-8">
             No admin records available
           </p>
         )}
-        
+
         {!loading && !error && data.length > 0 && (
           <div className="space-y-3">
             {data.map((item) => (

@@ -30,15 +30,17 @@ export function DataPanel() {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return
-      
+
       setLoading(true)
       setError(null)
-      
+
       try {
         const client = new ApiClient(getAccessToken)
-        const response: DataResponse = await client.getData()
+        console.log('[v0] Fetching data for org:', user.orgId)
+        const response: DataResponse = await client.getData(user.orgId)
         setData(response.data)
       } catch (err) {
+        console.error('[v0] Error fetching data:', err)
         setError(err instanceof Error ? err.message : 'Failed to fetch data')
       } finally {
         setLoading(false)
@@ -46,7 +48,7 @@ export function DataPanel() {
     }
 
     fetchData()
-  }, [getAccessToken, user])
+  }, [getAccessToken, user?.orgId, user])
 
   return (
     <Card>
@@ -65,20 +67,20 @@ export function DataPanel() {
             <Spinner className="h-6 w-6" />
           </div>
         )}
-        
+
         {error && (
           <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-4 text-destructive">
             <AlertCircle className="h-5 w-5" />
             <span>{error}</span>
           </div>
         )}
-        
+
         {!loading && !error && data.length === 0 && (
           <p className="text-center text-muted-foreground py-8">
             No data available for this organization
           </p>
         )}
-        
+
         {!loading && !error && data.length > 0 && (
           <div className="space-y-3">
             {data.map((item) => (
