@@ -29,6 +29,19 @@ export default function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, router])
 
+  useEffect(() => {
+    // Log user org and role information
+    if (user) {
+      console.log('[v0] [Dashboard] User authenticated:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        orgId: user.orgId,
+        roles: user.roles,
+      })
+    }
+  }, [user])
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">

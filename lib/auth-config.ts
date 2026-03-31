@@ -8,29 +8,29 @@ const getBaseUrl = () => {
 }
 
 export const ZITADEL_CONFIG = {
-  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-5mztig.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366384093325246872',
-  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366375710673140139',
-  jwksUri: 'https://logan-5mztig.eu1.zitadel.cloud/oauth/v2/keys',
+  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
+  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
+  jwksUri: 'https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys',
   // These are now functions to get dynamic URLs
-  getRedirectUri: () => `${getBaseUrl()}/auth/callback`,
-  getPostLogoutUri: () => getBaseUrl(),
+  getRedirectUri: () => process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`,
+  getPostLogoutUri: () => process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl(),
 }
 
 // Organization (Tenant) Configuration
 export const ORGANIZATIONS = {
   eltek: {
-    id: '366374814316839320',
+    id: process.env.NEXT_PUBLIC_ORG_ELTEK || '366479630091241134',
     name: 'Eltek',
     description: 'Default Organization',
   },
   acme: {
-    id: '366384747368169880',
+    id: process.env.NEXT_PUBLIC_ORG_ACME || '366479832122410670',
     name: 'Acme Corp',
     description: 'Admin Role Organization',
   },
   global: {
-    id: '366384790519216555',
+    id: process.env.NEXT_PUBLIC_ORG_GLOBAL || '366479851063887534',
     name: 'Global Tech',
     description: 'Member Role Organization',
   },
@@ -47,12 +47,7 @@ export const ROLES = {
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 
 // OIDC Scopes - Zitadel specific scopes for org and role info
-// openid, profile, email - standard OIDC scopes
-// urn:zitadel:iam:org:project:id:{projectId}:aud - includes project as audience
-// urn:zitadel:iam:user:metadata - includes user metadata (base64 encoded)
-// urn:zitadel:iam:user:resourceowner - includes user's resource owner (primary) org
-// urn:zitadel:iam:org:project:roles - includes all project roles across all orgs
-//
-// CRITICAL: urn:zitadel:iam:org:project:roles will return roles structure with all org memberships
-// Example: {"urn:zitadel:iam:org:project:{projectId}:roles": {"orgId1": {"role1": {...}}, "orgId2": {"role2": {...}}}}
-export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata urn:zitadel:iam:user:resourceowner urn:zitadel:iam:org:project:roles`
+// urn:zitadel:iam:org:id:{org_id} - scopes to specific org
+// urn:zitadel:iam:org:project:id:{project_id}:aud - includes project roles
+// urn:zitadel:iam:user:metadata - includes user metadata
+export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata`

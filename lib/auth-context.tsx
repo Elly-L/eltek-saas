@@ -12,7 +12,6 @@ interface AuthUser {
   roles: string[]
   accessToken: string
   rawUser: User
-  orgMemberships: string[] // List of org IDs user belongs to
 }
 
 interface AuthContextType {
@@ -66,12 +65,31 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
   const payload = parseJwtPayload(oidcUser.access_token)
   const idTokenPayload = oidcUser.id_token ? parseJwtPayload(oidcUser.id_token) : {}
 
-  // Extract org_id - check access token, id token, and profile
-  const orgId = (payload['urn:zitadel:iam:org:id'] as string) ||
-    (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
-    (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
-    (payload['org_id'] as string) ||
-    ORGANIZATIONS.eltek.id
+  console.log('[v0] Extracting user from OIDC token')
+  console.log('[v0] Access token payload keys:', Object.keys(payload))
+  console.log('[v0] ID token payload keys:', Object.keys(idTokenPayload))
+
+  // Extract org_id with fallback chain
+  // Priority: explicit org:id claim > user's resource owner > request context > default
+  let orgId = ''
+
+  // Try explicit org ID claim first
+  if (payload['urn:zitadel:iam:org:id']) {
+    orgId = payload['urn:zitadel:iam:org:id'] as string
+    console.log('[v0] Found org:id in access token:', orgId)
+  } else if (idTokenPayload['urn:zitadel:iam:org:id']) {
+    orgId = idTokenPayload['urn:zitadel:iam:org:id'] as string
+    console.log('[v0] Found org:id in ID token:', orgId)
+  } else if (oidcUser.profile['urn:zitadel:iam:org:id']) {
+    orgId = oidcUser.profile['urn:zitadel:iam:org:id'] as string
+    console.log('[v0] Found org:id in profile:', orgId)
+  } else if (payload['org_id']) {
+    orgId = payload['org_id'] as string
+    console.log('[v0] Found org_id in access token:', orgId)
+  } else {
+    orgId = ORGANIZATIONS.eltek.id
+    console.log('[v0] Defaulting to Eltek org ID:', orgId)
+  }
 
   // Extract user info from profile first, then tokens
   const email = oidcUser.profile.email ||
@@ -87,54 +105,33 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     ''
 
   // Extract project-specific roles from token claims
+  // The claim structure is: urn:zitadel:iam:org:project:{projectId}:roles
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) ||
-    (idTokenPayload[projectRolesKey] as Record<string, unknown>)
-  const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
+  let roles: string[] = []
 
-  // Extract organization memberships from token
-  // This is crucial for the org switcher to show all orgs the user has access to
-  const orgMemberships: string[] = []
-
-  // Method 1: Check for org roles claim which shows all org memberships
-  const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, unknown>>) ||
-    (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, unknown>>)
-  if (orgRoles && typeof orgRoles === 'object') {
-    console.log('[v0] Found org roles claim:', JSON.stringify(Object.keys(orgRoles)))
-    Object.entries(orgRoles).forEach(([orgIdKey, roles]) => {
-      if (orgIdKey && !orgMemberships.includes(orgIdKey)) {
-        orgMemberships.push(orgIdKey)
-        console.log('[v0] Added org from org roles:', orgIdKey)
-      }
-    })
+  // Check access token first
+  const projectRolesAccessToken = payload[projectRolesKey] as Record<string, unknown> | undefined
+  if (projectRolesAccessToken && typeof projectRolesAccessToken === 'object') {
+    roles = Object.keys(projectRolesAccessToken)
+    console.log('[v0] Found project roles in access token:', roles)
   }
 
-  // Method 2: Check for explicit org_memberships claim
-  const explicitMemberships = (payload['org_memberships'] as string[]) ||
-    (idTokenPayload['org_memberships'] as string[])
-  if (Array.isArray(explicitMemberships)) {
-    console.log('[v0] Found explicit org memberships:', explicitMemberships)
-    explicitMemberships.forEach(id => {
-      if (id && !orgMemberships.includes(id)) {
-        orgMemberships.push(id)
-      }
-    })
-  }
-
-  // Method 3: Ensure current org is included if user has project roles
-  if (projectRoles) {
-    console.log('[v0] User has project roles, adding current org to memberships')
-    if (!orgMemberships.includes(orgId)) {
-      orgMemberships.push(orgId)
+  // Fallback to ID token if not in access token
+  if (roles.length === 0) {
+    const projectRolesIdToken = idTokenPayload[projectRolesKey] as Record<string, unknown> | undefined
+    if (projectRolesIdToken && typeof projectRolesIdToken === 'object') {
+      roles = Object.keys(projectRolesIdToken)
+      console.log('[v0] Found project roles in ID token:', roles)
     }
   }
 
-  // Ensure current org is always in the list
-  if (!orgMemberships.includes(orgId)) {
-    orgMemberships.push(orgId)
+  // Default to member role if no roles found
+  if (roles.length === 0) {
+    roles = ['member']
+    console.log('[v0] No project roles found, defaulting to member role')
   }
 
-  console.log('[v0] Final org memberships extracted:', orgMemberships)
+  console.log('[v0] Extracted user:', { id: oidcUser.profile.sub, email, orgId, roles })
 
   return {
     id: oidcUser.profile.sub,
@@ -144,7 +141,6 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     roles,
     accessToken: oidcUser.access_token,
     rawUser: oidcUser,
-    orgMemberships,
   }
 }
 
@@ -160,18 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     manager.getUser().then((oidcUser) => {
       if (oidcUser && !oidcUser.expired) {
-        let authUser = extractUserFromOidc(oidcUser)
-
-        // Restore org preference if available
-        const selectedOrgId = typeof window !== 'undefined' ? localStorage.getItem('selectedOrgId') : null
-        if (selectedOrgId && authUser.orgMemberships.includes(selectedOrgId)) {
-          console.log('[v0] Restoring selected organization:', selectedOrgId)
-          authUser = {
-            ...authUser,
-            orgId: selectedOrgId,
-          }
-        }
-
+        const authUser = extractUserFromOidc(oidcUser)
         setUser(authUser)
       }
       setIsLoading(false)
