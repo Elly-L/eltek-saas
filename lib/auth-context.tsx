@@ -64,36 +64,56 @@ function parseJwtPayload(token: string): Record<string, unknown> {
 
 function extractUserFromOidc(oidcUser: User): AuthUser {
   const payload = parseJwtPayload(oidcUser.access_token)
+  const idTokenPayload = oidcUser.id_token ? parseJwtPayload(oidcUser.id_token) : {}
   
-  // Debug: Log the full payload to see what claims are available
-  console.log('[v0] JWT Payload:', JSON.stringify(payload, null, 2))
+  // Debug: Log full token info
+  console.log('[v0] Access Token Payload:', JSON.stringify(payload, null, 2))
+  console.log('[v0] ID Token Payload:', JSON.stringify(idTokenPayload, null, 2))
+  console.log('[v0] OIDC Profile:', JSON.stringify(oidcUser.profile, null, 2))
   
-  // Extract org_id from token claims - check multiple Zitadel claim formats
+  // Extract org_id - check access token, id token, and profile
   const orgId = (payload['urn:zitadel:iam:org:id'] as string) || 
-                (payload['org_id'] as string) ||
+                (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
                 (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
+                (payload['org_id'] as string) ||
                 ORGANIZATIONS.eltek.id
 
   console.log('[v0] Extracted orgId:', orgId)
 
+  // Extract user info from profile first, then tokens
+  const email = oidcUser.profile.email || 
+                (idTokenPayload['email'] as string) || 
+                (payload['email'] as string) || 
+                ''
+  
+  const name = oidcUser.profile.name || 
+               oidcUser.profile.preferred_username ||
+               (idTokenPayload['name'] as string) ||
+               (idTokenPayload['preferred_username'] as string) ||
+               (payload['name'] as string) ||
+               ''
+
+  console.log('[v0] Extracted email:', email, 'name:', name)
+
   // Extract roles from token claims - check multiple claim formats
-  const projectRoles = payload[`urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`] as Record<string, unknown> | undefined
+  const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
+  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) || 
+                       (idTokenPayload[projectRolesKey] as Record<string, unknown>)
   const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
   
   console.log('[v0] Extracted roles:', roles)
 
   // Extract organization memberships from token
-  // The user's current org is always included
   const orgMemberships: string[] = [orgId]
   
   // Check for org roles claim which shows all org memberships
-  const orgRoles = payload['urn:zitadel:iam:org:roles'] as Record<string, unknown> | undefined
+  const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>) ||
+                   (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>)
   if (orgRoles) {
-    Object.keys(orgRoles).forEach(role => {
-      const roleOrgs = orgRoles[role] as Record<string, string> | undefined
-      if (roleOrgs) {
+    Object.values(orgRoles).forEach(roleOrgs => {
+      if (roleOrgs && typeof roleOrgs === 'object') {
         Object.values(roleOrgs).forEach(id => {
-          if (!orgMemberships.includes(id)) {
+          if (id && !orgMemberships.includes(id)) {
             orgMemberships.push(id)
           }
         })
@@ -105,8 +125,8 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
 
   return {
     id: oidcUser.profile.sub,
-    email: oidcUser.profile.email || '',
-    name: oidcUser.profile.name || oidcUser.profile.preferred_username || '',
+    email,
+    name,
     orgId,
     roles,
     accessToken: oidcUser.access_token,

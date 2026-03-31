@@ -53,8 +53,7 @@ export default function DashboardPage() {
               alt={orgName}
               width={40}
               height={40}
-              className="rounded-lg object-contain"
-              style={{ width: 40, height: 'auto' }}
+              className="rounded-lg"
             />
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">

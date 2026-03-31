@@ -51,10 +51,8 @@ export default function LoginPage() {
               alt="Eltek SaaS"
               width={80}
               height={80}
-              loading="eager"
               priority
-              className="rounded-2xl shadow-lg object-contain"
-              style={{ width: 80, height: 'auto' }}
+              className="rounded-2xl shadow-lg"
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">
@@ -76,34 +74,10 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Default Login & Signup */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button
-                className="h-14 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:opacity-90"
-                onClick={() => handleLogin()}
-              >
-                <Lock className="mr-2 h-5 w-5" />
-                Sign In
-              </Button>
-              <Button
-                variant="outline"
-                className="h-14 border-2"
-                onClick={() => signup()}
-              >
-                <Users className="mr-2 h-5 w-5" />
-                Sign Up
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or choose an organization
-                </span>
-              </div>
+            {/* Info about org-specific login */}
+            <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">Choose your organization below</p>
+              <p>Select the organization you belong to. If you were invited to Acme Corp, click on Acme Corp to sign in with your credentials.</p>
             </div>
 
             {/* Organization-specific Login */}
@@ -130,13 +104,23 @@ export default function LoginPage() {
                           {key === 'acme' && (
                             <Badge variant="outline" className="text-xs">Admin</Badge>
                           )}
+                          {key === 'global' && (
+                            <Badge variant="outline" className="text-xs">Member</Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{org.description}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">ID: {org.id}</p>
                       </div>
                     </div>
                   </Button>
                 )
               })}
+            </div>
+
+            <div className="pt-2 text-center">
+              <Button variant="link" className="text-sm" onClick={() => signup()}>
+                New user? Create an account
+              </Button>
             </div>
           </CardContent>
         </Card>
