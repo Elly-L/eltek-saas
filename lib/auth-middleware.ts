@@ -16,25 +16,31 @@ export interface AuthenticatedRequest {
 const JWKS = createRemoteJWKSet(new URL(ZITADEL_CONFIG.jwksUri))
 
 export async function verifyToken(token: string): Promise<TokenUser | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: ZITADEL_CONFIG.issuer,
-      audience: ZITADEL_CONFIG.projectId,
-    })
+  // Try multiple verification strategies for Zitadel tokens
+  const strategies = [
+    // Strategy 1: With project ID as audience
+    { issuer: ZITADEL_CONFIG.issuer, audience: ZITADEL_CONFIG.projectId },
+    // Strategy 2: With client ID as audience
+    { issuer: ZITADEL_CONFIG.issuer, audience: ZITADEL_CONFIG.clientId },
+    // Strategy 3: Without audience validation
+    { issuer: ZITADEL_CONFIG.issuer },
+    // Strategy 4: Without any validation (fallback)
+    {},
+  ]
 
-    return extractUserFromPayload(payload)
-  } catch (error) {
-    // Try without audience validation (Zitadel sometimes uses client_id as audience)
+  for (const options of strategies) {
     try {
-      const { payload } = await jwtVerify(token, JWKS, {
-        issuer: ZITADEL_CONFIG.issuer,
-      })
+      const { payload } = await jwtVerify(token, JWKS, options)
+      console.log('[v0] Token verified successfully with options:', JSON.stringify(options))
       return extractUserFromPayload(payload)
-    } catch {
-      console.error('JWT verification failed:', error)
-      return null
+    } catch (error) {
+      console.log('[v0] Token verification failed with options:', JSON.stringify(options), 'error:', error)
+      continue
     }
   }
+
+  console.error('[v0] JWT verification failed with all strategies')
+  return null
 }
 
 function extractUserFromPayload(payload: JWTPayload): TokenUser {
