@@ -1,10 +1,8 @@
 // Zitadel OIDC Configuration
 // Must match redirect URIs registered in Zitadel client
 const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin
-  }
-  return 'https://v0-saa-s-app-build-dusky.vercel.app'
+  // Always use the Zitadel-registered redirect URI to match client configuration
+  return 'https://v0-eltek-saas.vercel.app'
 }
 
 export const ZITADEL_CONFIG = {
