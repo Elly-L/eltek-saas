@@ -1,13 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
 import { ZITADEL_CONFIG, OIDC_SCOPES } from '@/lib/auth-config'
 import { Spinner } from '@/components/ui/spinner'
 
 export default function AuthCallbackPage() {
-  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(true)
 
@@ -61,7 +59,7 @@ export default function AuthCallbackPage() {
     }
 
     handleCallback()
-  }, [router])
+  }, [])
 
   if (error) {
     return (
@@ -70,7 +68,7 @@ export default function AuthCallbackPage() {
           <h1 className="text-2xl font-bold text-destructive">Authentication Error</h1>
           <p className="mt-2 text-muted-foreground">{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => { window.location.href = '/' }}
             className="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
           >
             Return to Home
