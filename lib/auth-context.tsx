@@ -65,51 +65,81 @@ function parseJwtPayload(token: string): Record<string, unknown> {
 function extractUserFromOidc(oidcUser: User): AuthUser {
   const payload = parseJwtPayload(oidcUser.access_token)
   const idTokenPayload = oidcUser.id_token ? parseJwtPayload(oidcUser.id_token) : {}
-  
+
   // Extract org_id - check access token, id token, and profile
-  const orgId = (payload['urn:zitadel:iam:org:id'] as string) || 
-                (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
-                (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
-                (payload['org_id'] as string) ||
-                ORGANIZATIONS.eltek.id
+  const orgId = (payload['urn:zitadel:iam:org:id'] as string) ||
+    (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
+    (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
+    (payload['org_id'] as string) ||
+    ORGANIZATIONS.eltek.id
 
   // Extract user info from profile first, then tokens
-  const email = oidcUser.profile.email || 
-                (idTokenPayload['email'] as string) || 
-                (payload['email'] as string) || 
-                ''
-  
-  const name = oidcUser.profile.name || 
-               oidcUser.profile.preferred_username ||
-               (idTokenPayload['name'] as string) ||
-               (idTokenPayload['preferred_username'] as string) ||
-               (payload['name'] as string) ||
-               ''
+  const email = oidcUser.profile.email ||
+    (idTokenPayload['email'] as string) ||
+    (payload['email'] as string) ||
+    ''
+
+  const name = oidcUser.profile.name ||
+    oidcUser.profile.preferred_username ||
+    (idTokenPayload['name'] as string) ||
+    (idTokenPayload['preferred_username'] as string) ||
+    (payload['name'] as string) ||
+    ''
 
   // Extract roles from token claims - check multiple claim formats
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) || 
-                       (idTokenPayload[projectRolesKey] as Record<string, unknown>)
+  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) ||
+    (idTokenPayload[projectRolesKey] as Record<string, unknown>)
   const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
 
   // Extract organization memberships from token
-  const orgMemberships: string[] = [orgId]
-  
-  // Check for org roles claim which shows all org memberships
-  const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>) ||
-                   (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>)
-  if (orgRoles) {
-    Object.values(orgRoles).forEach(roleOrgs => {
-      if (roleOrgs && typeof roleOrgs === 'object') {
-        Object.values(roleOrgs).forEach(id => {
-          if (id && !orgMemberships.includes(id)) {
-            orgMemberships.push(id)
-          }
-        })
+  // This is crucial for the org switcher to show all orgs the user has access to
+  const orgMemberships: string[] = []
+
+  // Method 1: Check for org roles claim which shows all org memberships
+  const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, unknown>>) ||
+    (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, unknown>>)
+  if (orgRoles && typeof orgRoles === 'object') {
+    console.log('[v0] Found org roles claim:', JSON.stringify(Object.keys(orgRoles)))
+    Object.entries(orgRoles).forEach(([orgIdKey, roles]) => {
+      if (orgIdKey && !orgMemberships.includes(orgIdKey)) {
+        orgMemberships.push(orgIdKey)
+        console.log('[v0] Added org from org roles:', orgIdKey)
       }
     })
   }
 
+  // Method 2: Check for explicit org_memberships claim
+  const explicitMemberships = (payload['org_memberships'] as string[]) ||
+    (idTokenPayload['org_memberships'] as string[])
+  if (Array.isArray(explicitMemberships)) {
+    console.log('[v0] Found explicit org memberships:', explicitMemberships)
+    explicitMemberships.forEach(id => {
+      if (id && !orgMemberships.includes(id)) {
+        orgMemberships.push(id)
+      }
+    })
+  }
+
+  // Method 3: Check for project-specific roles which may indicate org access
+  if (projectRoles) {
+    console.log('[v0] User has project roles, checking for multiple org assignments')
+    // If user has project roles, they should have access to at least the current org
+    if (!orgMemberships.includes(orgId)) {
+      orgMemberships.push(orgId)
+    }
+  }
+
+  // Method 4: Ensure current org is always in the list
+  if (orgMemberships.length === 0 || !orgMemberships.includes(orgId)) {
+    if (!orgMemberships.includes(orgId)) {
+      orgMemberships.push(orgId)
+    }
+  }
+
+  console.log('[v0] Final org memberships extracted:', orgMemberships)
+
+  // Return extracted user object with all org memberships
   return {
     id: oidcUser.profile.sub,
     email,
@@ -147,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
-      manager.events.removeAccessTokenExpired(() => {})
+      manager.events.removeAccessTokenExpired(() => { })
     }
   }, [])
 

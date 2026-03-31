@@ -4,35 +4,50 @@ import { getDataByOrg, addData } from '@/lib/data-store'
 
 // GET /api/data - Returns data scoped to user's organization
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const token = extractBearerToken(authHeader)
+  try {
+    const authHeader = request.headers.get('authorization')
+    console.log('[v0] GET /api/data - Auth header present:', !!authHeader)
 
-  if (!token) {
+    const token = extractBearerToken(authHeader)
+    if (!token) {
+      console.log('[v0] No bearer token found in authorization header')
+      return NextResponse.json(
+        { error: 'Missing or invalid authorization header' },
+        { status: 401 }
+      )
+    }
+
+    console.log('[v0] Token found, verifying...')
+    const user = await verifyToken(token)
+
+    if (!user) {
+      console.error('[v0] Token verification failed - user is null')
+      return NextResponse.json(
+        { error: 'Invalid or expired token. Token verification failed.' },
+        { status: 401 }
+      )
+    }
+
+    console.log('[v0] User verified successfully:', { userId: user.id, orgId: user.orgId, roles: user.roles })
+
+    // Get data scoped to user's organization
+    const orgData = getDataByOrg(user.orgId)
+    console.log('[v0] Retrieved org data:', { orgId: user.orgId, recordCount: orgData.length })
+
+    return NextResponse.json({
+      message: 'Data retrieved successfully',
+      orgId: user.orgId,
+      userId: user.id,
+      roles: user.roles,
+      data: orgData,
+    })
+  } catch (error) {
+    console.error('[v0] GET /api/data error:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
-      { error: 'Missing or invalid authorization header' },
-      { status: 401 }
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
     )
   }
-
-  const user = await verifyToken(token)
-  
-  if (!user) {
-    return NextResponse.json(
-      { error: 'Invalid or expired token' },
-      { status: 401 }
-    )
-  }
-
-  // Get data scoped to user's organization
-  const orgData = getDataByOrg(user.orgId)
-
-  return NextResponse.json({
-    message: 'Data retrieved successfully',
-    orgId: user.orgId,
-    userId: user.id,
-    roles: user.roles,
-    data: orgData,
-  })
 }
 
 // POST /api/data - Create new data record
@@ -48,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await verifyToken(token)
-  
+
   if (!user) {
     return NextResponse.json(
       { error: 'Invalid or expired token' },
