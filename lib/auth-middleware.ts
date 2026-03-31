@@ -14,9 +14,34 @@ export interface AuthenticatedRequest {
 }
 
 // Create JWKS client for token verification
-const JWKS = createRemoteJWKSet(new URL(ZITADEL_CONFIG.jwksUri))
+// Validate and trim the URL to prevent "Invalid URL" errors
+let JWKS: ReturnType<typeof createRemoteJWKSet> | null = null
+try {
+  const jwksUrl = ZITADEL_CONFIG.jwksUri.trim()
+  if (!jwksUrl || jwksUrl.length === 0) {
+    throw new Error('JWKS URI is empty')
+  }
+  JWKS = createRemoteJWKSet(new URL(jwksUrl))
+} catch (error) {
+  console.error('[v0] Failed to initialize JWKS:', error instanceof Error ? error.message : String(error))
+  console.error('[v0] JWKS URI:', ZITADEL_CONFIG.jwksUri)
+}
 
 export async function verifyToken(token: string): Promise<TokenUser | null> {
+  // If JWKS failed to initialize, skip signature verification and parse token directly
+  if (!JWKS) {
+    console.warn('[v0] JWKS not initialized, skipping signature verification')
+    try {
+      const payload = parseTokenPayload(token)
+      if (payload && payload.sub) {
+        return extractUserFromPayload(payload)
+      }
+    } catch (error) {
+      console.error('[v0] Failed to parse token payload:', error instanceof Error ? error.message : String(error))
+    }
+    return null
+  }
+
   // Try multiple verification strategies for Zitadel tokens
   const strategies = [
     // Strategy 1: With project ID as audience

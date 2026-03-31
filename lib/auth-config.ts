@@ -8,16 +8,16 @@ const getBaseUrl = () => {
 }
 
 export const ZITADEL_CONFIG = {
-  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
-  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
+  issuer: (process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud').trim(),
+  clientId: (process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502').trim(),
+  projectId: (process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550').trim(),
   get jwksUri() {
-    const issuer = this.issuer as string
+    const issuer = (this.issuer as string).trim()
     return `${issuer}/oauth/v2/keys`
   },
   // These are now functions to get dynamic URLs
-  getRedirectUri: () => process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`,
-  getPostLogoutUri: () => process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl(),
+  getRedirectUri: () => (process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`).trim(),
+  getPostLogoutUri: () => (process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl()).trim(),
 }
 
 // Organization (Tenant) Configuration
