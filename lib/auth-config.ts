@@ -1,18 +1,15 @@
 // Zitadel OIDC Configuration
 // Must match redirect URIs registered in Zitadel client
-const getBaseUrl = () => {
-  // Always use the Zitadel-registered redirect URI to match client configuration
-  return 'https://v0-eltek-saas.vercel.app'
-}
+// Use environment variables for all URLs to avoid mismatches
 
 export const ZITADEL_CONFIG = {
-  issuer: 'https://logan-w6rewj.eu1.zitadel.cloud',
-  clientId: '366480073395619502',
-  projectId: '366479925319845550',
-  jwksUri: 'https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys',
-  // These are now functions to get dynamic URLs
-  getRedirectUri: () => `${getBaseUrl()}/auth/callback`,
-  getPostLogoutUri: () => getBaseUrl(),
+  issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
+  projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
+  jwksUri: `${process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud'}/oauth/v2/keys`,
+  // Use environment variables directly - no dynamic detection
+  getRedirectUri: () => process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || 'https://v0-eltek-saas.vercel.app/auth/callback',
+  getPostLogoutUri: () => process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || 'https://v0-eltek-saas.vercel.app',
 }
 
 // Organization (Tenant) Configuration

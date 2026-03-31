@@ -18,10 +18,11 @@ export default function AuthCallbackPage() {
         const urlParams = new URLSearchParams(window.location.search)
         const hasCode = urlParams.has('code')
         const hasState = urlParams.has('state')
-        
-        // If no OIDC params, this might be a password reset or invitation completion
+        const hasAuthRequest = urlParams.has('authRequest')
+
+        // If no OIDC params and no authRequest, this might be a password reset or invitation completion
         // Redirect to login to start fresh OIDC flow
-        if (!hasCode || !hasState) {
+        if (!hasCode && !hasState && !hasAuthRequest) {
           window.location.href = '/'
           return
         }
@@ -48,13 +49,13 @@ export default function AuthCallbackPage() {
       } catch (err) {
         console.error('Auth callback error:', err)
         const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
-        
+
         // Handle "No matching state" error - redirect to login
         if (errorMessage.includes('state') || errorMessage.includes('No matching')) {
           window.location.href = '/'
           return
         }
-        
+
         setError(errorMessage)
         setIsProcessing(false)
       }
