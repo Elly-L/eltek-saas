@@ -9,9 +9,12 @@ const getBaseUrl = () => {
 
 export const ZITADEL_CONFIG = {
   issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || 'https://logan-w6rewj.eu1.zitadel.cloud',
   projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
-  jwksUri: 'https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys',
+  get jwksUri() {
+    const issuer = this.issuer as string
+    return `${issuer}/oauth/v2/keys`
+  },
   // These are now functions to get dynamic URLs
   getRedirectUri: () => process.env.NEXT_PUBLIC_ZITADEL_REDIRECT_URI || `${getBaseUrl()}/auth/callback`,
   getPostLogoutUri: () => process.env.NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI || getBaseUrl(),
@@ -35,6 +38,11 @@ export const ORGANIZATIONS = {
     description: 'Member Role Organization',
   },
 } as const
+
+// Note: These should be set via environment variables in production:
+// NEXT_PUBLIC_ORG_ELTEK=366479630091241134
+// NEXT_PUBLIC_ORG_ACME=366479832122410670
+// NEXT_PUBLIC_ORG_GLOBAL=366479851063887534
 
 export type OrgKey = keyof typeof ORGANIZATIONS
 
