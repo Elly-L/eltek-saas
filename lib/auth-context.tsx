@@ -31,13 +31,26 @@ function createUserManager(orgId?: string): UserManager {
   const extraQueryParams: Record<string, string> = {}
   if (orgId) {
     extraQueryParams['org_id'] = orgId
+    console.log('[v0] Creating UserManager with org_id:', orgId)
   }
+
+  const redirectUri = ZITADEL_CONFIG.getRedirectUri()
+  const postLogoutUri = ZITADEL_CONFIG.getPostLogoutUri()
+  
+  console.log('[v0] UserManager config:', {
+    issuer: ZITADEL_CONFIG.issuer,
+    client_id: ZITADEL_CONFIG.clientId,
+    redirect_uri: redirectUri,
+    post_logout_uri: postLogoutUri,
+    scope: OIDC_SCOPES,
+    extraQueryParams,
+  })
 
   return new UserManager({
     authority: ZITADEL_CONFIG.issuer,
     client_id: ZITADEL_CONFIG.clientId,
-    redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
-    post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
+    redirect_uri: redirectUri,
+    post_logout_redirect_uri: postLogoutUri,
     response_type: 'code',
     scope: OIDC_SCOPES,
     userStore: new WebStorageStateStore({ store: typeof window !== 'undefined' ? window.localStorage : undefined }),
@@ -177,20 +190,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (orgId?: string) => {
     const manager = createUserManager(orgId)
     setUserManager(manager)
+    console.log('[v0] Initiating login for org:', orgId || 'default')
     await manager.signinRedirect()
   }, [])
 
   const signup = useCallback(async (orgId?: string) => {
     // For registration, redirect to Zitadel's registration endpoint
-    // Note: prompt=create is not standard OIDC; we use the standard login flow
+    // Note: We use the standard login flow; Zitadel will allow registration
     const manager = createUserManager(orgId)
     setUserManager(manager)
-    // Use standard login prompt - user can register during login if needed
-    await manager.signinRedirect({
-      extraQueryParams: {
-        ...(orgId ? { org_id: orgId } : {}),
-      },
-    })
+    console.log('[v0] Initiating signup for org:', orgId || 'default')
+    await manager.signinRedirect()
   }, [])
 
   const logout = useCallback(async () => {
