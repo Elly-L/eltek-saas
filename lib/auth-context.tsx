@@ -181,12 +181,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signup = useCallback(async (orgId?: string) => {
-    // Zitadel uses the same endpoint with prompt=create for registration
+    // For registration, redirect to Zitadel's registration endpoint
+    // Note: prompt=create is not standard OIDC; we use the standard login flow
     const manager = createUserManager(orgId)
     setUserManager(manager)
+    // Use standard login prompt - user can register during login if needed
     await manager.signinRedirect({
       extraQueryParams: {
-        prompt: 'create',
         ...(orgId ? { org_id: orgId } : {}),
       },
     })
