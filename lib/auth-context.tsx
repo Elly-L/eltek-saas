@@ -29,9 +29,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 function createUserManager(orgId?: string): UserManager {
-  const extraQueryParams: Record<string, string> = {}
+  // Build scopes - include org_id in scope string if provided
+  let scope = OIDC_SCOPES
   if (orgId) {
-    extraQueryParams['org_id'] = orgId
+    scope = `${OIDC_SCOPES} urn:zitadel:iam:org:id:${orgId}`
   }
 
   return new UserManager({
@@ -40,9 +41,8 @@ function createUserManager(orgId?: string): UserManager {
     redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
     post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
     response_type: 'code',
-    scope: OIDC_SCOPES,
+    scope,
     userStore: new WebStorageStateStore({ store: typeof window !== 'undefined' ? window.localStorage : undefined }),
-    extraQueryParams,
   })
 }
 
@@ -65,39 +65,39 @@ function parseJwtPayload(token: string): Record<string, unknown> {
 function extractUserFromOidc(oidcUser: User): AuthUser {
   const payload = parseJwtPayload(oidcUser.access_token)
   const idTokenPayload = oidcUser.id_token ? parseJwtPayload(oidcUser.id_token) : {}
-  
+
   // Extract org_id - check access token, id token, and profile
-  const orgId = (payload['urn:zitadel:iam:org:id'] as string) || 
-                (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
-                (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
-                (payload['org_id'] as string) ||
-                ORGANIZATIONS.eltek.id
+  const orgId = (payload['urn:zitadel:iam:org:id'] as string) ||
+    (idTokenPayload['urn:zitadel:iam:org:id'] as string) ||
+    (oidcUser.profile['urn:zitadel:iam:org:id'] as string) ||
+    (payload['org_id'] as string) ||
+    ORGANIZATIONS.eltek.id
 
   // Extract user info from profile first, then tokens
-  const email = oidcUser.profile.email || 
-                (idTokenPayload['email'] as string) || 
-                (payload['email'] as string) || 
-                ''
-  
-  const name = oidcUser.profile.name || 
-               oidcUser.profile.preferred_username ||
-               (idTokenPayload['name'] as string) ||
-               (idTokenPayload['preferred_username'] as string) ||
-               (payload['name'] as string) ||
-               ''
+  const email = oidcUser.profile.email ||
+    (idTokenPayload['email'] as string) ||
+    (payload['email'] as string) ||
+    ''
+
+  const name = oidcUser.profile.name ||
+    oidcUser.profile.preferred_username ||
+    (idTokenPayload['name'] as string) ||
+    (idTokenPayload['preferred_username'] as string) ||
+    (payload['name'] as string) ||
+    ''
 
   // Extract roles from token claims - check multiple claim formats
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) || 
-                       (idTokenPayload[projectRolesKey] as Record<string, unknown>)
+  const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) ||
+    (idTokenPayload[projectRolesKey] as Record<string, unknown>)
   const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
 
   // Extract organization memberships from token
   const orgMemberships: string[] = [orgId]
-  
+
   // Check for org roles claim which shows all org memberships
   const orgRoles = (payload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>) ||
-                   (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>)
+    (idTokenPayload['urn:zitadel:iam:org:roles'] as Record<string, Record<string, string>>)
   if (orgRoles) {
     Object.values(orgRoles).forEach(roleOrgs => {
       if (roleOrgs && typeof roleOrgs === 'object') {
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
-      manager.events.removeAccessTokenExpired(() => {})
+      manager.events.removeAccessTokenExpired(() => { })
     }
   }, [])
 
@@ -159,12 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(async (orgId?: string) => {
     // Zitadel uses the same endpoint with prompt=create for registration
+    // org_id is passed via createUserManager which includes it in the scope string
     const manager = createUserManager(orgId)
     setUserManager(manager)
     await manager.signinRedirect({
       extraQueryParams: {
         prompt: 'create',
-        ...(orgId ? { org_id: orgId } : {}),
       },
     })
   }, [])
