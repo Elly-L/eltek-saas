@@ -123,8 +123,8 @@ Global Tech: 366479851063887534
 ### Redirect URIs
 | Item | URL |
 |------|-----|
-| **Callback** | `https://v0-eltek-saas.vercel.app/auth/callback` |
-| **Logout** | `https://v0-eltek-saas.vercel.app` |
+| **Callback** | `https://v0-eltek-saas-frontend.vercel.app/auth/callback` |
+| **Logout** | `https://v0-eltek-saas-frontend.vercel.app` |
 
 ### Organizations
 | Name | ID |

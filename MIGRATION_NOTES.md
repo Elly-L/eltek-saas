@@ -46,8 +46,8 @@ case '366479851063887534': // Global Tech
 - Issuer: `https://logan-w6rewj.eu1.zitadel.cloud` (unchanged)
 - Client ID: `366480073395619502` (NEW)
 - Project ID: `366479925319845550` (unchanged from old config)
-- Redirect URI: `https://v0-eltek-saas.vercel.app/auth/callback` (NEW)
-- Post Logout URI: `https://v0-eltek-saas.vercel.app` (NEW)
+- Redirect URI: `https://v0-eltek-saas-frontend.vercel.app/auth/callback` (NEW)
+- Post Logout URI: `https://v0-eltek-saas-frontend.vercel.app` (NEW)
 - Added org ID variables for reference
 
 ### 2. Environment Variables Set in Vercel

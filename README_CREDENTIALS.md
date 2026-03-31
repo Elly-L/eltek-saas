@@ -51,8 +51,8 @@ Project ID: 366479925319845550
 
 ### Redirect URLs
 ```
-Callback:   https://v0-eltek-saas.vercel.app/auth/callback
-Logout:     https://v0-eltek-saas.vercel.app
+Callback:   https://v0-eltek-saas-frontend.vercel.app/auth/callback
+Logout:     https://v0-eltek-saas-frontend.vercel.app
 ```
 
 ### Organizations
@@ -81,7 +81,7 @@ git push origin main
 
 ### 3. Test Application
 ```
-Visit: https://v0-eltek-saas.vercel.app
+Visit: https://v0-eltek-saas-frontend.vercel.app
 ↓
 Click "Eltek" button
 ↓
@@ -96,7 +96,7 @@ Dashboard loads
 ## ✅ Verification Quick Checklist
 
 ### Login Test
-- [ ] Visit https://v0-eltek-saas.vercel.app
+- [ ] Visit https://v0-eltek-saas-frontend.vercel.app
 - [ ] All 3 org buttons visible
 - [ ] Click Eltek → redirects to Zitadel
 - [ ] Login successful

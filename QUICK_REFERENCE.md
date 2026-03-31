@@ -12,8 +12,8 @@ JWKS URI:          https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys
 
 ### Redirect URIs
 ```
-Callback:          https://v0-eltek-saas.vercel.app/auth/callback
-Post Logout:       https://v0-eltek-saas.vercel.app
+Callback:          https://v0-eltek-saas-frontend.vercel.app/auth/callback
+Post Logout:       https://v0-eltek-saas-frontend.vercel.app
 ```
 
 ### Organization IDs
@@ -31,8 +31,8 @@ Global Tech:       366479851063887534
 NEXT_PUBLIC_ZITADEL_ISSUER=https://logan-w6rewj.eu1.zitadel.cloud
 NEXT_PUBLIC_ZITADEL_CLIENT_ID=366480073395619502
 NEXT_PUBLIC_ZITADEL_PROJECT_ID=366479925319845550
-NEXT_PUBLIC_ZITADEL_REDIRECT_URI=https://v0-eltek-saas.vercel.app/auth/callback
-NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI=https://v0-eltek-saas.vercel.app
+NEXT_PUBLIC_ZITADEL_REDIRECT_URI=https://v0-eltek-saas-frontend.vercel.app/auth/callback
+NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI=https://v0-eltek-saas-frontend.vercel.app
 NEXT_PUBLIC_ORG_ELTEK=366479630091241134
 NEXT_PUBLIC_ORG_ACME=366479832122410670
 NEXT_PUBLIC_ORG_GLOBAL=366479851063887534
@@ -47,7 +47,7 @@ NEXT_PUBLIC_ORG_GLOBAL=366479851063887534
 - [ ] Vercel redeployed (required after env var changes)
 
 ### Login Test
-- [ ] Visit https://v0-eltek-saas.vercel.app
+- [ ] Visit https://v0-eltek-saas-frontend.vercel.app
 - [ ] Click "Eltek" button
 - [ ] Login with Zitadel credentials
 - [ ] Redirects to dashboard

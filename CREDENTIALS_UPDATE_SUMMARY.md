@@ -19,8 +19,8 @@ Your Zitadel account was lost and recreated. This summary shows all the updates 
 - **Project ID**: `366479925319845550`
 
 ### Redirect Configuration
-- **Callback URL**: `https://v0-eltek-saas.vercel.app/auth/callback`
-- **Logout URL**: `https://v0-eltek-saas.vercel.app`
+- **Callback URL**: `https://v0-eltek-saas-frontend.vercel.app/auth/callback`
+- **Logout URL**: `https://v0-eltek-saas-frontend.vercel.app`
 
 ### Organizations (Tenants)
 | Name | New ID | Old ID | Purpose |

@@ -17,8 +17,8 @@ Before testing, verify all 8 variables are set in Vercel Settings → Vars:
 ☐ NEXT_PUBLIC_ZITADEL_ISSUER = https://logan-w6rewj.eu1.zitadel.cloud
 ☐ NEXT_PUBLIC_ZITADEL_CLIENT_ID = 366480073395619502
 ☐ NEXT_PUBLIC_ZITADEL_PROJECT_ID = 366479925319845550
-☐ NEXT_PUBLIC_ZITADEL_REDIRECT_URI = https://v0-eltek-saas.vercel.app/auth/callback
-☐ NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI = https://v0-eltek-saas.vercel.app
+☐ NEXT_PUBLIC_ZITADEL_REDIRECT_URI = https://v0-eltek-saas-frontend.vercel.app/auth/callback
+☐ NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI = https://v0-eltek-saas-frontend.vercel.app
 ☐ NEXT_PUBLIC_ORG_ELTEK = 366479630091241134
 ☐ NEXT_PUBLIC_ORG_ACME = 366479832122410670
 ☐ NEXT_PUBLIC_ORG_GLOBAL = 366479851063887534
@@ -38,8 +38,8 @@ Before testing, verify all 8 variables are set in Vercel Settings → Vars:
 In your Zitadel admin console:
 ```
 [ ] Verify app is using Client ID: 366480073395619502
-[ ] Confirm Redirect URI matches: https://v0-eltek-saas.vercel.app/auth/callback
-[ ] Confirm Post Logout URI matches: https://v0-eltek-saas.vercel.app
+[ ] Confirm Redirect URI matches: https://v0-eltek-saas-frontend.vercel.app/auth/callback
+[ ] Confirm Post Logout URI matches: https://v0-eltek-saas-frontend.vercel.app
 [ ] Check that organizations exist with correct IDs
 [ ] Verify project: 366479925319845550 has role definitions
 ```

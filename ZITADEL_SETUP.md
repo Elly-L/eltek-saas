@@ -12,8 +12,8 @@ This guide documents the Zitadel OIDC authentication configuration for the Eltek
 - **JWKS URI**: `https://logan-w6rewj.eu1.zitadel.cloud/oauth/v2/keys`
 
 ### Redirect URIs
-- **Production**: `https://v0-eltek-saas.vercel.app/auth/callback`
-- **Post Logout URI**: `https://v0-eltek-saas.vercel.app`
+- **Production**: `https://v0-eltek-saas-frontend.vercel.app/auth/callback`
+- **Post Logout URI**: `https://v0-eltek-saas-frontend.vercel.app`
 - **Development**: `http://localhost:3000/auth/callback` (optional)
 
 ### Organization IDs (Tenants)
@@ -32,8 +32,8 @@ All environment variables have been set in your Vercel project. Verify they are 
 NEXT_PUBLIC_ZITADEL_ISSUER=https://logan-w6rewj.eu1.zitadel.cloud
 NEXT_PUBLIC_ZITADEL_CLIENT_ID=366480073395619502
 NEXT_PUBLIC_ZITADEL_PROJECT_ID=366479925319845550
-NEXT_PUBLIC_ZITADEL_REDIRECT_URI=https://v0-eltek-saas.vercel.app/auth/callback
-NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI=https://v0-eltek-saas.vercel.app
+NEXT_PUBLIC_ZITADEL_REDIRECT_URI=https://v0-eltek-saas-frontend.vercel.app/auth/callback
+NEXT_PUBLIC_ZITADEL_POST_LOGOUT_URI=https://v0-eltek-saas-frontend.vercel.app
 NEXT_PUBLIC_ORG_ELTEK=366479630091241134
 NEXT_PUBLIC_ORG_ACME=366479832122410670
 NEXT_PUBLIC_ORG_GLOBAL=366479851063887534
@@ -83,7 +83,7 @@ NEXT_PUBLIC_ORG_GLOBAL=366479851063887534
 ## Testing Checklist
 
 ### Pre-Authentication Tests
-- [ ] Visit `https://v0-eltek-saas.vercel.app` (or local dev URL)
+- [ ] Visit `https://v0-eltek-saas-frontend.vercel.app` (or local dev URL)
 - [ ] Verify login page loads with 3 organization options (Eltek, Acme Corp, Global Tech)
 - [ ] Check that organization logos/icons display correctly
 
@@ -118,15 +118,21 @@ With a valid access token from authentication:
 ```bash
 # Get current user
 curl -H "Authorization: Bearer {ACCESS_TOKEN}" \
-  https://v0-eltek-saas.vercel.app/api/user
+https://v0-eltek-saas-frontend.vercel.app/api/user
 
-# Get organization data
-curl -H "Authorization: Bearer {ACCESS_TOKEN}" \
-  https://v0-eltek-saas.vercel.app/api/data
+```
 
-# Get admin data (requires admin role)
-curl -H "Authorization: Bearer {ACCESS_TOKEN}" \
-  https://v0-eltek-saas.vercel.app/api/admin
+### Test Get Data
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+https://v0-eltek-saas-frontend.vercel.app/api/data
+
+```
+
+### Test Admin Endpoint
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+https://v0-eltek-saas-frontend.vercel.app/api/admin
 ```
 
 ### Token Verification Tests
