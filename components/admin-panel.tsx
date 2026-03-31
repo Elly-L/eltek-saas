@@ -2,55 +2,35 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { ApiClient } from '@/lib/api-client'
+import { getAdminDataByOrg } from '@/lib/dummy-data'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
-import { AlertCircle, Shield, Lock } from 'lucide-react'
+import { Shield, Lock } from 'lucide-react'
 
-interface AdminRecord {
+interface AdminDataRecord {
   id: string
-  action: string
-  target: string
-  performedAt: string
-  orgId: string
-}
-
-interface AdminResponse {
-  data: AdminRecord[]
-  orgId: string
-  message: string
+  type: string
+  organization: string
+  count: number
+  status: string
+  updatedAt: string
 }
 
 export function AdminPanel() {
-  const { getAccessToken, user } = useAuth()
-  const [data, setData] = useState<AdminRecord[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+  const [data, setData] = useState<AdminDataRecord[]>([])
 
   const isAdmin = user?.roles.includes('admin')
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return
-
-      setLoading(true)
-      setError(null)
-
-      try {
-        const client = new ApiClient(getAccessToken)
-        console.log('[v0] Fetching admin data for org:', user.orgId)
-        const response: AdminResponse = await client.getAdminData(user.orgId)
-        setData(response.data)
-      } catch (err) {
-        console.error('[v0] Error fetching admin data:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch admin data')
-      } finally {
-        setLoading(false)
-      }
+    if (!user || !isAdmin) {
+      setData([])
+      return
     }
 
-    fetchData()
-  }, [getAccessToken, user?.orgId, user])
+    // Load admin data directly from dummy data
+    const adminData = getAdminDataByOrg(user.orgId)
+    setData(adminData)
+  }, [user?.orgId, user, isAdmin])
 
   if (!isAdmin) {
     return (
@@ -72,7 +52,7 @@ export function AdminPanel() {
             <p className="mt-4 text-sm text-muted-foreground">
               You need the admin role to access this section.
               <br />
-              Switch to Acme Corp organization for admin access.
+              Switch to an organization where you have admin role.
             </p>
           </div>
         </CardContent>
@@ -88,30 +68,17 @@ export function AdminPanel() {
           <CardTitle>Admin Panel</CardTitle>
         </div>
         <CardDescription>
-          Admin-only data (GET /api/admin) - Requires admin role
+          Admin-only data - Requires admin role
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {loading && (
-          <div className="flex items-center justify-center py-8">
-            <Spinner className="h-6 w-6" />
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-4 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {!loading && !error && data.length === 0 && (
+        {data.length === 0 && (
           <p className="text-center text-muted-foreground py-8">
             No admin records available
           </p>
         )}
 
-        {!loading && !error && data.length > 0 && (
+        {data.length > 0 && (
           <div className="space-y-3">
             {data.map((item) => (
               <div
@@ -119,16 +86,26 @@ export function AdminPanel() {
                 className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-cyan-600 dark:text-cyan-400">
-                    {item.action}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(item.performedAt).toLocaleDateString()}
+                  <div>
+                    <span className="font-medium text-cyan-600 dark:text-cyan-400">
+                      {item.type}
+                    </span>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {item.organization}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    {item.count}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Target: {item.target}
-                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Status: {item.status}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {item.updatedAt}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
