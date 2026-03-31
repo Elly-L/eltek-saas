@@ -28,20 +28,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-function createUserManager(orgId?: string): UserManager {
-  // Build scopes - include org_id in scope string if provided
-  let scope = OIDC_SCOPES
-  if (orgId) {
-    scope = `${OIDC_SCOPES} urn:zitadel:iam:org:id:${orgId}`
-  }
-
+function createUserManager(): UserManager {
   return new UserManager({
     authority: ZITADEL_CONFIG.issuer,
     client_id: ZITADEL_CONFIG.clientId,
     redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
     post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
     response_type: 'code',
-    scope,
+    scope: OIDC_SCOPES,
     userStore: new WebStorageStateStore({ store: typeof window !== 'undefined' ? window.localStorage : undefined }),
   })
 }
@@ -152,15 +146,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (orgId?: string) => {
-    const manager = createUserManager(orgId)
+    const manager = createUserManager()
     setUserManager(manager)
+    // org_id is passed in scope string in OIDC_SCOPES if needed
+    // Do NOT pass org_id as query parameter - it causes 400 Bad Request with Zitadel
     await manager.signinRedirect()
   }, [])
 
   const signup = useCallback(async (orgId?: string) => {
     // Zitadel uses the same endpoint with prompt=create for registration
-    // org_id is passed via createUserManager which includes it in the scope string
-    const manager = createUserManager(orgId)
+    // Do NOT pass org_id as query parameter - it causes 400 Bad Request
+    const manager = createUserManager()
     setUserManager(manager)
     await manager.signinRedirect({
       extraQueryParams: {
