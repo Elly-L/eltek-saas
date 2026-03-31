@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ORGANIZATIONS, type OrgKey } from '@/lib/auth-config'
@@ -20,6 +20,7 @@ const ORG_LOGIN_CONFIG: Record<OrgKey, { icon: typeof Building2; gradient: strin
 export default function LoginPage() {
   const router = useRouter()
   const { isLoading, isAuthenticated, login, signup } = useAuth()
+  const [loginInProgress, setLoginInProgress] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -28,8 +29,14 @@ export default function LoginPage() {
   }, [isLoading, isAuthenticated, router])
 
   const handleLogin = async (orgKey?: OrgKey) => {
+    setLoginInProgress(orgKey || 'default')
     const orgId = orgKey ? ORGANIZATIONS[orgKey].id : undefined
     await login(orgId)
+  }
+
+  const handleSignup = async () => {
+    setLoginInProgress('signup')
+    await signup()
   }
 
   if (isLoading) {
@@ -52,7 +59,7 @@ export default function LoginPage() {
               width={80}
               height={80}
               priority
-              className="rounded-2xl shadow-lg"
+              className="rounded-2xl shadow-lg w-auto h-auto"
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">
@@ -86,6 +93,7 @@ export default function LoginPage() {
                 const org = ORGANIZATIONS[key]
                 const config = ORG_LOGIN_CONFIG[key]
                 const Icon = config.icon
+                const isLoggingIn = loginInProgress === key
 
                 return (
                   <Button
@@ -93,23 +101,29 @@ export default function LoginPage() {
                     variant="outline"
                     className="h-auto justify-start p-4 hover:bg-muted"
                     onClick={() => handleLogin(key)}
+                    disabled={!!loginInProgress}
                   >
                     <div className="flex w-full items-center gap-3">
                       <div className={`rounded-lg bg-gradient-to-r ${config.gradient} p-2`}>
-                        <Icon className="h-5 w-5 text-white" />
+                        {isLoggingIn ? (
+                          <Spinner className="h-5 w-5 text-white" />
+                        ) : (
+                          <Icon className="h-5 w-5 text-white" />
+                        )}
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{org.name}</span>
-                          {key === 'acme' && (
+                          <span className="font-medium">
+                            {isLoggingIn ? 'Redirecting...' : org.name}
+                          </span>
+                          {!isLoggingIn && key === 'acme' && (
                             <Badge variant="outline" className="text-xs">Admin</Badge>
                           )}
-                          {key === 'global' && (
+                          {!isLoggingIn && key === 'global' && (
                             <Badge variant="outline" className="text-xs">Member</Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">{org.description}</p>
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">ID: {org.id}</p>
                       </div>
                     </div>
                   </Button>
@@ -118,8 +132,20 @@ export default function LoginPage() {
             </div>
 
             <div className="pt-2 text-center">
-              <Button variant="link" className="text-sm" onClick={() => signup()}>
-                New user? Create an account
+              <Button 
+                variant="link" 
+                className="text-sm" 
+                onClick={handleSignup}
+                disabled={!!loginInProgress}
+              >
+                {loginInProgress === 'signup' ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Redirecting...
+                  </>
+                ) : (
+                  'New user? Create an account'
+                )}
               </Button>
             </div>
           </CardContent>

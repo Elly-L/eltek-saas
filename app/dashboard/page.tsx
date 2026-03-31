@@ -53,7 +53,7 @@ export default function DashboardPage() {
               alt={orgName}
               width={40}
               height={40}
-              className="rounded-lg"
+              className="rounded-lg w-auto h-auto"
             />
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">
@@ -102,9 +102,6 @@ export default function DashboardPage() {
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>{orgName} - Multi-Tenant Application with Zitadel OIDC Authentication</p>
-          <p className="mt-1">
-            Logged in as: {user?.name || user?.email} | Organization ID: {user?.orgId}
-          </p>
         </div>
       </footer>
     </div>

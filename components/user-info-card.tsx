@@ -25,32 +25,20 @@ export function UserInfoCard() {
       <CardContent className="space-y-4">
         <div className="grid gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">User ID</span>
-            <code className="rounded bg-muted px-2 py-1 text-xs font-mono">
-              {user.id.slice(0, 16)}...
-            </code>
-          </div>
-          
-          <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Email</span>
-            <span className="text-sm font-medium">{user.email || 'N/A'}</span>
+            <span className="text-sm font-medium">{user.email || 'Not provided'}</span>
           </div>
           
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Name</span>
-            <span className="text-sm font-medium">{user.name || 'N/A'}</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Organization ID</span>
-            <code className="rounded bg-muted px-2 py-1 text-xs font-mono">
-              {user.orgId}
-            </code>
+            <span className="text-sm font-medium">{user.name || 'Not provided'}</span>
           </div>
           
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Organization</span>
-            <Badge variant="outline">{orgName}</Badge>
+            <Badge variant="outline" className="bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10">
+              {orgName}
+            </Badge>
           </div>
           
           <div className="flex items-center justify-between">
@@ -65,20 +53,6 @@ export function UserInfoCard() {
                   {role}
                 </Badge>
               ))}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t">
-            <span className="text-sm text-muted-foreground">Org Memberships</span>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {user.orgMemberships.map((orgId) => {
-                const matchedOrg = Object.entries(ORGANIZATIONS).find(([, org]) => org.id === orgId)
-                return (
-                  <Badge key={orgId} variant="outline" className="text-xs">
-                    {matchedOrg ? matchedOrg[1].name : orgId.slice(0, 8) + '...'}
-                  </Badge>
-                )
-              })}
             </div>
           </div>
         </div>
