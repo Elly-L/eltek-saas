@@ -32,15 +32,8 @@ export function OrgSwitcher() {
     await switchOrganization(orgKey)
   }
 
-  // Determine which orgs user has access to based on roles
-  // Admins have access to all orgs, members only to their current org
-  const isUserAdmin = user?.roles.includes('admin') || false
-  const userOrgIds = isUserAdmin 
-    ? Object.values(ORGANIZATIONS).map(org => org.id) // Admin gets all orgs
-    : user?.orgMemberships?.length 
-      ? user.orgMemberships 
-      : [user?.orgId] // Members get their current org or memberships
-  
+  // Filter organizations to only show those the user is a member of
+  const userOrgIds = user?.orgMemberships || [user?.orgId]
   const availableOrgs = (Object.keys(ORGANIZATIONS) as OrgKey[]).filter(key => {
     const org = ORGANIZATIONS[key]
     return userOrgIds.includes(org.id)
