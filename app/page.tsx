@@ -21,12 +21,17 @@ export default function LoginPage() {
   const router = useRouter()
   const { isLoading, isAuthenticated, login, signup } = useAuth()
   const [loginInProgress, setLoginInProgress] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted && !isLoading && isAuthenticated) {
       router.push('/dashboard')
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isMounted, isLoading, isAuthenticated, router])
 
   const handleLogin = async (orgKey?: OrgKey) => {
     setLoginInProgress(orgKey || 'default')

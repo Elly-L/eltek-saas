@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { ORGANIZATIONS } from '@/lib/auth-config'
@@ -16,6 +16,7 @@ import Image from 'next/image'
 export default function DashboardPage() {
   const router = useRouter()
   const { user, isLoading, isAuthenticated, logout } = useAuth()
+  const [isMounted, setIsMounted] = useState(false)
 
   // Get current organization details
   const currentOrg = user ? Object.entries(ORGANIZATIONS).find(
@@ -25,10 +26,14 @@ export default function DashboardPage() {
   const orgDescription = currentOrg ? currentOrg[1].description : 'Multi-Tenant Platform'
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted && !isLoading && !isAuthenticated) {
       router.push('/')
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isMounted, isLoading, isAuthenticated, router])
 
   if (isLoading) {
     return (
@@ -48,13 +53,15 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <Image
-              src="/eltek-logo.jpg"
-              alt={orgName}
-              width={40}
-              height={40}
-              className="rounded-lg w-auto h-auto"
-            />
+            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg">
+              <Image
+                src="/eltek-logo.jpg"
+                alt={orgName}
+                width={40}
+                height={40}
+                className="h-full w-full object-cover"
+              />
+            </div>
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">
                 {orgName}
