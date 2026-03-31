@@ -6,6 +6,7 @@ export interface TokenUser {
   orgId: string
   roles: string[]
   email?: string
+  orgMemberships?: string[] // All orgs user has access to, extracted from token claims
 }
 
 export interface AuthenticatedRequest {
@@ -76,22 +77,75 @@ function parseTokenPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * Extract all organization memberships from the token payload
+ * The urn:zitadel:iam:org:project:roles claim contains all orgs the user has access to
+ */
+function extractOrgMemberships(payload: JWTPayload): string[] {
+  const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
+  const projectRoles = payload[projectRolesKey] as Record<string, Record<string, unknown>> | undefined
+
+  if (!projectRoles || typeof projectRoles !== 'object') {
+    console.log('[v0] No project roles claim found in token')
+    return []
+  }
+
+  const orgMemberships = Object.keys(projectRoles).filter(orgId => {
+    const roles = projectRoles[orgId]
+    return roles && typeof roles === 'object' && Object.keys(roles).length > 0
+  })
+
+  console.log('[v0] Extracted org memberships from token:', orgMemberships)
+  return orgMemberships
+}
+
 function extractUserFromPayload(payload: JWTPayload): TokenUser {
-  // Extract org_id from various possible claim locations
-  const orgId = (payload['urn:zitadel:iam:org:id'] as string) ||
-    (payload['org_id'] as string) ||
-    ORGANIZATIONS.eltek.id
+  // Extract org_id with multiple fallback strategies
+  let orgId = ''
+
+  // Strategy 1: Check for explicit org:id claim (used when requesting specific org)
+  if (payload['urn:zitadel:iam:org:id']) {
+    orgId = payload['urn:zitadel:iam:org:id'] as string
+    console.log('[v0] Using org:id claim:', orgId)
+  }
+  // Strategy 2: Check for resource owner org (user's primary org)
+  else if (payload['urn:zitadel:iam:user:resourceowner:id']) {
+    orgId = payload['urn:zitadel:iam:user:resourceowner:id'] as string
+    console.log('[v0] Using resource owner org:', orgId)
+  }
+  // Strategy 3: Extract from project roles (first org in the list)
+  else {
+    const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
+    const projectRoles = payload[projectRolesKey] as Record<string, Record<string, unknown>> | undefined
+    if (projectRoles && typeof projectRoles === 'object') {
+      const orgIds = Object.keys(projectRoles)
+      if (orgIds.length > 0) {
+        orgId = orgIds[0]
+        console.log('[v0] Using first org from project roles:', orgId)
+      }
+    }
+  }
+
+  // Fallback if no org found (but log it as warning)
+  if (!orgId) {
+    console.warn('[v0] No organization claim found in token, defaulting to Eltek org')
+    orgId = ORGANIZATIONS.eltek.id
+  }
 
   // Extract roles from project-specific claim
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  const projectRoles = payload[projectRolesKey] as Record<string, unknown> | undefined
-  const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
+  const projectRoles = payload[projectRolesKey] as Record<string, Record<string, unknown>> | undefined
+  const roles: string[] = projectRoles && projectRoles[orgId] ? Object.keys(projectRoles[orgId]) : ['member']
+
+  // Extract all org memberships from token
+  const orgMemberships = extractOrgMemberships(payload)
 
   return {
     id: payload.sub || '',
     orgId,
     roles,
     email: payload.email as string | undefined,
+    orgMemberships: orgMemberships.length > 0 ? orgMemberships : [orgId],
   }
 }
 
@@ -101,6 +155,31 @@ export function hasRole(user: TokenUser, requiredRole: string): boolean {
 
 export function isAdmin(user: TokenUser): boolean {
   return hasRole(user, 'admin')
+}
+
+/**
+ * Verify that user has access to a specific organization
+ * Checks against token's orgMemberships claim to enforce org boundaries
+ */
+export function canAccessOrg(user: TokenUser, requestedOrgId: string): boolean {
+  // User can always access their current org
+  if (user.orgId === requestedOrgId) {
+    return true
+  }
+
+  // Check if org is in token's memberships list
+  if (user.orgMemberships && user.orgMemberships.includes(requestedOrgId)) {
+    return true
+  }
+
+  // Admins have cross-org access
+  if (isAdmin(user)) {
+    console.log('[v0] Admin user granted access to org:', requestedOrgId)
+    return true
+  }
+
+  console.log('[v0] User cannot access org:', requestedOrgId, '- memberships:', user.orgMemberships)
+  return false
 }
 
 export function extractBearerToken(authHeader: string | null): string | null {

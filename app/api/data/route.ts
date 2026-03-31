@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, extractBearerToken } from '@/lib/auth-middleware'
+import { verifyToken, extractBearerToken, canAccessOrg } from '@/lib/auth-middleware'
 import { getDataByOrg } from '@/lib/dummy-data'
 
 // GET /api/data - Returns data scoped to user's organization
+// Authorization: Validates org membership from Zitadel token claims
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -28,23 +29,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[v0] User verified successfully:', { userId: user.id, orgId: user.orgId, roles: user.roles })
+    console.log('[v0] User verified successfully:', {
+      userId: user.id,
+      orgId: user.orgId,
+      roles: user.roles,
+      orgMemberships: user.orgMemberships
+    })
 
     // Check for orgId override from query params
     const searchParams = request.nextUrl.searchParams
     const requestedOrgId = searchParams.get('orgId') || user.orgId
 
-    // Verify user has access to requested org
-    if (requestedOrgId !== user.orgId) {
-      console.log('[v0] Org ID mismatch - user org:', user.orgId, 'requested:', requestedOrgId)
-      // In a real app, check if user is member of requested org
-      // For now, allow it if user is admin
-      if (!user.roles.includes('admin')) {
-        return NextResponse.json(
-          { error: 'Unauthorized to access this organization' },
-          { status: 403 }
-        )
-      }
+    // ENFORCE ORG BOUNDARY: Validate user has access to requested org using token claims
+    if (!canAccessOrg(user, requestedOrgId)) {
+      console.log('[v0] User does not have access to org:', requestedOrgId)
+      return NextResponse.json(
+        { error: 'Unauthorized to access this organization', orgId: requestedOrgId },
+        { status: 403 }
+      )
     }
 
     // Get data scoped to the organization
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest) {
       orgId: requestedOrgId,
       userId: user.id,
       roles: user.roles,
+      orgMemberships: user.orgMemberships,
       data: orgData,
     })
   } catch (error) {

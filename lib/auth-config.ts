@@ -47,8 +47,12 @@ export const ROLES = {
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 
 // OIDC Scopes - Zitadel specific scopes for org and role info
-// urn:zitadel:iam:org:id:{org_id} - scopes to specific org
-// urn:zitadel:iam:org:project:id:{project_id}:aud - includes project roles
-// urn:zitadel:iam:user:metadata - includes user metadata
-// urn:zitadel:iam:org:roles - includes all organization memberships with their roles
-export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata urn:zitadel:iam:org:roles`
+// openid, profile, email - standard OIDC scopes
+// urn:zitadel:iam:org:project:id:{projectId}:aud - includes project as audience
+// urn:zitadel:iam:user:metadata - includes user metadata (base64 encoded)
+// urn:zitadel:iam:user:resourceowner - includes user's resource owner (primary) org
+// urn:zitadel:iam:org:project:roles - includes all project roles across all orgs
+//
+// CRITICAL: urn:zitadel:iam:org:project:roles will return roles structure with all org memberships
+// Example: {"urn:zitadel:iam:org:project:{projectId}:roles": {"orgId1": {"role1": {...}}, "orgId2": {"role2": {...}}}}
+export const OIDC_SCOPES = `openid profile email urn:zitadel:iam:org:project:id:${ZITADEL_CONFIG.projectId}:aud urn:zitadel:iam:user:metadata urn:zitadel:iam:user:resourceowner urn:zitadel:iam:org:project:roles`

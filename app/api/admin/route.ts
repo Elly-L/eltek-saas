@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, extractBearerToken, isAdmin } from '@/lib/auth-middleware'
+import { verifyToken, extractBearerToken, isAdmin, canAccessOrg } from '@/lib/auth-middleware'
 import { getAdminDataByOrg } from '@/lib/dummy-data'
 
 // GET /api/admin - Returns admin data (admin role required)
+// Authorization: Requires admin role AND org membership validation
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -29,7 +30,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[v0] User verified for admin endpoint:', { userId: user.id, roles: user.roles })
+    console.log('[v0] User verified for admin endpoint:', {
+      userId: user.id,
+      roles: user.roles,
+      orgMemberships: user.orgMemberships
+    })
 
     // RBAC: Only admins can access this endpoint
     if (!isAdmin(user)) {
@@ -44,6 +49,16 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const requestedOrgId = searchParams.get('orgId') || user.orgId
 
+    // ENFORCE ORG BOUNDARY: Even admins can only access orgs they're members of
+    // (unless they want to allow cross-org admin access, then remove this check)
+    if (!canAccessOrg(user, requestedOrgId)) {
+      console.log('[v0] Admin user does not have access to org:', requestedOrgId)
+      return NextResponse.json(
+        { error: 'Unauthorized to access this organization', orgId: requestedOrgId },
+        { status: 403 }
+      )
+    }
+
     // Get admin data scoped to organization
     const adminData = getAdminDataByOrg(requestedOrgId)
     console.log('[v0] Retrieved admin data:', { orgId: requestedOrgId, recordCount: adminData.length })
@@ -53,6 +68,7 @@ export async function GET(request: NextRequest) {
       orgId: requestedOrgId,
       userId: user.id,
       roles: user.roles,
+      orgMemberships: user.orgMemberships,
       data: adminData,
     })
   } catch (error) {
