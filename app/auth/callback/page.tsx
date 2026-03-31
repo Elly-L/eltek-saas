@@ -1,123 +1,93 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
-import { ZITADEL_CONFIG, ORGANIZATIONS } from './auth-config'
+'use client'
 
-export interface TokenUser {
-  id: string
-  orgId: string
-  roles: string[]
-  email?: string
-}
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
+import { ZITADEL_CONFIG, OIDC_SCOPES } from '@/lib/auth-config'
+import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/button'
+import { AlertCircle } from 'lucide-react'
 
-export interface AuthenticatedRequest {
-  user: TokenUser
-}
+export default function AuthCallbackPage() {
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(true)
 
-// Create JWKS client for token verification
-const JWKS = createRemoteJWKSet(new URL(ZITADEL_CONFIG.jwksUri))
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        // Check if this is a valid OIDC callback (has code and state params)
+        const urlParams = new URLSearchParams(window.location.search)
+        const hasCode = urlParams.has('code')
+        const hasState = urlParams.has('state')
+        
+        // If no OIDC params, this might be a password reset or invitation completion
+        // Redirect to login to start fresh OIDC flow
+        if (!hasCode || !hasState) {
+          window.location.href = '/'
+          return
+        }
 
-export async function verifyToken(token: string): Promise<TokenUser | null> {
-  // Try multiple verification strategies for Zitadel tokens
-  const strategies = [
-    // Strategy 1: With project ID as audience
-    { issuer: ZITADEL_CONFIG.issuer, audience: ZITADEL_CONFIG.projectId },
-    // Strategy 2: With client ID as audience
-    { issuer: ZITADEL_CONFIG.issuer, audience: ZITADEL_CONFIG.clientId },
-    // Strategy 3: Without audience validation
-    { issuer: ZITADEL_CONFIG.issuer },
-    // Strategy 4: No issuer validation
-    {},
-  ]
+        const userManager = new UserManager({
+          authority: ZITADEL_CONFIG.issuer,
+          client_id: ZITADEL_CONFIG.clientId,
+          redirect_uri: ZITADEL_CONFIG.getRedirectUri(),
+          post_logout_redirect_uri: ZITADEL_CONFIG.getPostLogoutUri(),
+          response_type: 'code',
+          scope: OIDC_SCOPES,
+          userStore: new WebStorageStateStore({ store: window.localStorage }),
+        })
 
-  for (const options of strategies) {
-    try {
-      const { payload } = await jwtVerify(token, JWKS, options)
-      console.log('[v0] Token verified successfully with strategy:', JSON.stringify(options))
-      return extractUserFromPayload(payload)
-    } catch (error) {
-      console.log('[v0] Strategy failed:', JSON.stringify(options), 'Error:', error instanceof Error ? error.message : String(error))
-      continue
+        const user = await userManager.signinRedirectCallback()
+        if (user) {
+          // Force a small delay to ensure localStorage is updated
+          await new Promise(resolve => setTimeout(resolve, 100))
+          window.location.href = '/dashboard'
+        } else {
+          setError('No user returned from authentication')
+          setIsProcessing(false)
+        }
+      } catch (err) {
+        console.error('Auth callback error:', err)
+        const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
+        
+        // Handle "No matching state" error - redirect to login
+        if (errorMessage.includes('state') || errorMessage.includes('No matching')) {
+          window.location.href = '/'
+          return
+        }
+        
+        setError(errorMessage)
+        setIsProcessing(false)
+      }
     }
-  }
 
-  // Fallback: Try to extract user data from token without verification
-  // This allows API calls to work even if signature verification fails
-  try {
-    console.log('[v0] All verification strategies failed, attempting fallback extraction from token payload')
-    const payload = parseTokenPayload(token)
-    if (payload && payload.sub) {
-      console.log('[v0] Successfully extracted user data from unverified token')
-      return extractUserFromPayload(payload)
-    }
-  } catch (extractError) {
-    console.error('[v0] Failed to extract user data from token:', extractError instanceof Error ? extractError.message : String(extractError))
-  }
+    handleCallback()
+  }, [router])
 
-  console.error('[v0] JWT verification and fallback extraction both failed')
-  return null
-}
-
-// Helper function to parse JWT payload without verification
-function parseTokenPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-
-    const base64Url = parts[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="rounded-full bg-destructive/10 p-4 w-fit mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2">Authentication Error</h1>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => window.location.href = '/'}>
+            Return to Home
+          </Button>
+        </div>
+      </div>
     )
-    return JSON.parse(jsonPayload)
-  } catch {
-    return null
-  }
-}
-
-function extractUserFromPayload(payload: JWTPayload): TokenUser {
-  // Extract org_id with fallback chain for robustness
-  let orgId = ''
-
-  if (payload['urn:zitadel:iam:org:id']) {
-    orgId = payload['urn:zitadel:iam:org:id'] as string
-    console.log('[v0] [Middleware] Found org:id claim:', orgId)
-  } else if (payload['org_id']) {
-    orgId = payload['org_id'] as string
-    console.log('[v0] [Middleware] Found org_id claim:', orgId)
-  } else {
-    orgId = ORGANIZATIONS.eltek.id
-    console.log('[v0] [Middleware] Defaulting to Eltek org ID:', orgId)
   }
 
-  // Extract roles from project-specific claim
-  // Structure: urn:zitadel:iam:org:project:{projectId}:roles
-  const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
-  const projectRoles = payload[projectRolesKey] as Record<string, unknown> | undefined
-  const roles: string[] = projectRoles ? Object.keys(projectRoles) : ['member']
-
-  console.log('[v0] [Middleware] Extracted - User ID:', payload.sub, 'Org:', orgId, 'Roles:', roles)
-
-  return {
-    id: payload.sub || '',
-    orgId,
-    roles,
-    email: payload.email as string | undefined,
-  }
-}
-
-export function hasRole(user: TokenUser, requiredRole: string): boolean {
-  return user.roles.includes(requiredRole)
-}
-
-export function isAdmin(user: TokenUser): boolean {
-  return hasRole(user, 'admin')
-}
-
-export function extractBearerToken(authHeader: string | null): string | null {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null
-  }
-  return authHeader.slice(7)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <Spinner className="h-8 w-8 mx-auto mb-4" />
+        <p className="text-muted-foreground">Completing authentication...</p>
+      </div>
+    </div>
+  )
 }
