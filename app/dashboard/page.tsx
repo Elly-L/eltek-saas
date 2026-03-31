@@ -7,7 +7,6 @@ import { ORGANIZATIONS } from '@/lib/auth-config'
 import { UserInfoCard } from '@/components/user-info-card'
 import { OrgSwitcher } from '@/components/org-switcher'
 import { DataPanel } from '@/components/data-panel'
-import { AdminPanel } from '@/components/admin-panel'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { LogOut } from 'lucide-react'
@@ -95,7 +94,6 @@ export default function DashboardPage() {
           {/* Right Column - Data Panels */}
           <div className="space-y-6 lg:col-span-2">
             <DataPanel />
-            <AdminPanel />
           </div>
         </div>
       </main>

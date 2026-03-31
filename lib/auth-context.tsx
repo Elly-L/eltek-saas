@@ -121,10 +121,9 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     })
   }
 
-  // Method 3: Check for project-specific roles which may indicate org access
+  // Method 3: Ensure current org is included if user has project roles
   if (projectRoles) {
-    console.log('[v0] User has project roles, checking for org access')
-    // If user has project roles, they should have access to at least the current org
+    console.log('[v0] User has project roles, adding current org to memberships')
     if (!orgMemberships.includes(orgId)) {
       orgMemberships.push(orgId)
     }

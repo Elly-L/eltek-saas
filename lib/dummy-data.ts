@@ -233,11 +233,11 @@ const GLOBAL_TECH_ADMIN_DATA: AdminDataRecord[] = [
 // Get data by organization ID
 export function getDataByOrg(orgId: string): DataRecord[] {
   switch (orgId) {
-    case '1':
+    case '366374814316839320': // Eltek
       return ELTEK_DATA
-    case '2':
+    case '366384747368169880': // Acme Corp
       return ACME_DATA
-    case '3':
+    case '366384790519216555': // Global Tech
       return GLOBAL_TECH_DATA
     default:
       return []
@@ -247,11 +247,11 @@ export function getDataByOrg(orgId: string): DataRecord[] {
 // Get admin data by organization ID
 export function getAdminDataByOrg(orgId: string): AdminDataRecord[] {
   switch (orgId) {
-    case '1':
+    case '366374814316839320': // Eltek
       return ELTEK_ADMIN_DATA
-    case '2':
+    case '366384747368169880': // Acme Corp
       return ACME_ADMIN_DATA
-    case '3':
+    case '366384790519216555': // Global Tech
       return GLOBAL_TECH_ADMIN_DATA
     default:
       return []
