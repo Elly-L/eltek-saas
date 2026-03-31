@@ -86,7 +86,7 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
     (payload['name'] as string) ||
     ''
 
-  // Extract roles from token claims - check multiple claim formats
+  // Extract project-specific roles from token claims
   const projectRolesKey = `urn:zitadel:iam:org:project:${ZITADEL_CONFIG.projectId}:roles`
   const projectRoles = (payload[projectRolesKey] as Record<string, unknown>) ||
     (idTokenPayload[projectRolesKey] as Record<string, unknown>)
@@ -122,7 +122,6 @@ function extractUserFromOidc(oidcUser: User): AuthUser {
   }
 
   // Method 3: Check for project-specific roles which may indicate org access
-  // Using already-defined projectRoles variable from line 91
   if (projectRoles) {
     console.log('[v0] User has project roles, checking for org access')
     // If user has project roles, they should have access to at least the current org
