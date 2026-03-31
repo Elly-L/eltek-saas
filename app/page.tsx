@@ -52,7 +52,9 @@ export default function LoginPage() {
               width={80}
               height={80}
               loading="eager"
-              className="rounded-2xl shadow-lg"
+              priority
+              className="rounded-2xl shadow-lg object-contain"
+              style={{ width: 80, height: 'auto' }}
             />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">

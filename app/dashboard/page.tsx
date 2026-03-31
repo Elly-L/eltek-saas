@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { ORGANIZATIONS } from '@/lib/auth-config'
 import { UserInfoCard } from '@/components/user-info-card'
 import { OrgSwitcher } from '@/components/org-switcher'
 import { DataPanel } from '@/components/data-panel'
@@ -15,6 +16,13 @@ import Image from 'next/image'
 export default function DashboardPage() {
   const router = useRouter()
   const { user, isLoading, isAuthenticated, logout } = useAuth()
+
+  // Get current organization details
+  const currentOrg = user ? Object.entries(ORGANIZATIONS).find(
+    ([, org]) => org.id === user.orgId
+  ) : null
+  const orgName = currentOrg ? currentOrg[1].name : 'Your Organization'
+  const orgDescription = currentOrg ? currentOrg[1].description : 'Multi-Tenant Platform'
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -42,16 +50,17 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Image
               src="/eltek-logo.jpg"
-              alt="Eltek SaaS"
+              alt={orgName}
               width={40}
               height={40}
-              className="rounded-lg"
+              className="rounded-lg object-contain"
+              style={{ width: 40, height: 'auto' }}
             />
             <div>
               <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-transparent">
-                Eltek SaaS
+                {orgName}
               </h1>
-              <p className="text-xs text-muted-foreground">Multi-Tenant Platform</p>
+              <p className="text-xs text-muted-foreground">{orgDescription}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -69,9 +78,9 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold">Dashboard</h2>
+          <h2 className="text-3xl font-bold">Welcome, {user?.name || 'User'}!</h2>
           <p className="text-muted-foreground">
-            Welcome back! Manage your organization and access your data.
+            You are logged into <strong>{orgName}</strong>. Manage your organization and access your data.
           </p>
         </div>
 
@@ -93,9 +102,9 @@ export default function DashboardPage() {
       {/* Footer */}
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Eltek SaaS - Multi-Tenant Application with Zitadel OIDC Authentication</p>
+          <p>{orgName} - Multi-Tenant Application with Zitadel OIDC Authentication</p>
           <p className="mt-1">
-            Organizations: Eltek (Default) | Acme Corp (Admin) | Global Tech (Member)
+            Logged in as: {user?.name || user?.email} | Organization ID: {user?.orgId}
           </p>
         </div>
       </footer>

@@ -67,6 +67,20 @@ export function UserInfoCard() {
               ))}
             </div>
           </div>
+
+          <div className="pt-2 border-t">
+            <span className="text-sm text-muted-foreground">Org Memberships</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {user.orgMemberships.map((orgId) => {
+                const matchedOrg = Object.entries(ORGANIZATIONS).find(([, org]) => org.id === orgId)
+                return (
+                  <Badge key={orgId} variant="outline" className="text-xs">
+                    {matchedOrg ? matchedOrg[1].name : orgId.slice(0, 8) + '...'}
+                  </Badge>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
