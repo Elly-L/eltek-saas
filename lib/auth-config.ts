@@ -4,7 +4,8 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return window.location.origin
   }
-  return 'https://v0-eltek-saas.vercel.app'
+  // Updated to match your active v0 environment for Server-Side Rendering
+  return 'https://v0-saa-s-app-build-dusky.vercel.app'
 }
 
 export const ZITADEL_CONFIG = {
