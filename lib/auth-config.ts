@@ -9,7 +9,7 @@ const getBaseUrl = () => {
 
 export const ZITADEL_CONFIG = {
   issuer: process.env.NEXT_PUBLIC_ZITADEL_ISSUER || 'https://logan-w6rewj.eu1.zitadel.cloud',
-  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || 'https://logan-w6rewj.eu1.zitadel.cloud',
+  clientId: process.env.NEXT_PUBLIC_ZITADEL_CLIENT_ID || '366480073395619502',
   projectId: process.env.NEXT_PUBLIC_ZITADEL_PROJECT_ID || '366479925319845550',
   get jwksUri() {
     const issuer = this.issuer as string
